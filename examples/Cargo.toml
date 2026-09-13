@@ -1,0 +1,35 @@
+[package]
+name = "tpt-av-asset-examples"
+description = "Demo binaries for the tpt-av-asset engine"
+publish = false
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+
+[dependencies]
+tpt-av-asset-cache.workspace = true
+tpt-av-asset-db.workspace = true
+tpt-av-asset-pipeline.workspace = true
+tpt-av-asset-proxy.workspace = true
+tpt-av-asset-utils.workspace = true
+tpt-cadence.workspace = true
+tpt-kinetix.workspace = true
+
+[[bin]]
+name = "import_media"
+path = "src/bin/import_media.rs"
+
+[[bin]]
+name = "waveform_viewer"
+path = "src/bin/waveform_viewer.rs"
+
+[[bin]]
+name = "thumbnail_browser"
+path = "src/bin/thumbnail_browser.rs"
+
+[[bin]]
+name = "proxy_generator"
+path = "src/bin/proxy_generator.rs"

@@ -1,0 +1,51 @@
+# cargo-deny configuration for tpt-av-asset.
+#
+# Policy (spec section 7): permissive licenses only. No GPL, LGPL, AGPL, or
+# MPL anywhere in the dependency tree.
+
+[licenses]
+unlicensed = "deny"
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "CC0-1.0",
+    # unicode-ident (a transitive dependency of unicode tooling) ships the
+    # Unicode data files under these licenses. Data licenses, not copyleft.
+    "Unicode-3.0",
+    "Unicode-DFS-2016",
+]
+deny = [
+    "GPL-2.0",
+    "GPL-3.0",
+    "LGPL-2.1",
+    "LGPL-3.0",
+    "AGPL-3.0",
+    "MPL-2.0",
+]
+copyleft = "deny"
+
+[bans]
+multiple-versions = "warn"
+deny = [
+    # C-based / copyleft media stacks are explicitly banned (spec section 7).
+    { name = "sqlite3-sys" },
+    { name = "libsqlite3-sys" },
+    { name = "ffmpeg-sys" },
+    { name = "ffmpeg-sys-next" },
+    { name = "ffmpeg-next" },
+]
+
+[advisories]
+vulnerability = "warn"
+unmaintained = "warn"
+yanked = "warn"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

@@ -1,0 +1,19 @@
+[package]
+name = "tpt-av-asset-cache"
+description = "Waveform peak and thumbnail caching with real-time-safe reads"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+keywords = ["media", "audio", "video", "asset", "cache"]
+categories = ["multimedia"]
+
+[dependencies]
+tpt-av-asset-utils.workspace = true
+tpt-av-asset-db.workspace = true
+tpt-cadence.workspace = true
+tpt-kinetix.workspace = true
+image.workspace = true
+log.workspace = true

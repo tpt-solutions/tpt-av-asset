@@ -1,0 +1,11 @@
+[package]
+name = "tpt-av-asset-utils"
+description = "Shared types, identifiers, progress and error handling for the TPT AV asset engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+keywords = ["media", "audio", "video", "asset", "cache"]
+categories = ["multimedia"]

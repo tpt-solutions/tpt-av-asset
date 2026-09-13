@@ -1,0 +1,40 @@
+[workspace]
+resolver = "2"
+members = [
+    "tpt-av-asset-utils",
+    "tpt-av-asset-db",
+    "tpt-av-asset-cache",
+    "tpt-av-asset-proxy",
+    "tpt-av-asset-watcher",
+    "tpt-av-asset-pipeline",
+    # Local stand-ins for the real `tpt-kinetix` / `tpt-cadence` git dependencies
+    # until those repositories are ready (see todo.md "Deviations", Phase 7).
+    "stubs/tpt-kinetix",
+    "stubs/tpt-cadence",
+    # Demo binaries (publish = false).
+    "examples",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/tpt-solutions/tpt-av-asset"
+rust-version = "1.75"
+authors = ["TPT Solutions"]
+
+[workspace.dependencies]
+tpt-av-asset-utils = { path = "tpt-av-asset-utils", version = "0.1.0" }
+tpt-av-asset-db = { path = "tpt-av-asset-db", version = "0.1.0" }
+tpt-av-asset-cache = { path = "tpt-av-asset-cache", version = "0.1.0" }
+tpt-av-asset-proxy = { path = "tpt-av-asset-proxy", version = "0.1.0" }
+tpt-av-asset-watcher = { path = "tpt-av-asset-watcher", version = "0.1.0" }
+tpt-av-asset-pipeline = { path = "tpt-av-asset-pipeline", version = "0.1.0" }
+# Placeholder stand-ins for the real ecosystem crates; swap for
+# `git = "https://github.com/tpt-solutions/..."` once those repos exist.
+tpt-kinetix = { path = "stubs/tpt-kinetix", version = "0.1.0" }
+tpt-cadence = { path = "stubs/tpt-cadence", version = "0.1.0" }
+redb = "2.1"
+notify = "6.1"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
+log = "0.4"
