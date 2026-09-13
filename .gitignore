@@ -1,0 +1,13 @@
+/target
+**/target
+Cargo.lock
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local cache dir used for manual testing
+/.tpt-av-asset/

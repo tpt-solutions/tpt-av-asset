@@ -1,0 +1,898 @@
+# tpt-av-asset
+
+**A pure-Rust, background media asset management engine. Proxy generation, waveform caching, thumbnail indexing, and filesystem monitoring. The performance backbone of the TPT AV stack.**
+
+**License:** MIT  
+**Status:** Early-stage / Pre-1.0  
+**Ecosystem:** [TPT Solutions Open Source](https://opensource.tptsolutions.co.nz/)
+
+---
+
+## 1. Vision & Philosophy
+
+`tpt-av-asset` is the **media asset management layer** of the TPT AV Stack. It provides the background infrastructure that makes professional media applications feel instantaneous — even when working with massive 4K/8K video files or multi-hour podcast recordings.
+
+The problem with most open-source media tools is that they either:
+1. Block the UI while generating waveforms or proxies (feels "laggy" and amateurish)
+2. Rely on proprietary asset management systems (Final Cut Pro, Premiere Pro)
+3. Have no asset management at all (Audacity, basic editors)
+
+`tpt-av-asset` solves this by providing:
+1. **Background proxy generation** — lightweight versions of heavy media files for smooth playback
+2. **Waveform peak caching** — pre-computed min/max peaks for instant waveform rendering
+3. **Video thumbnail caching** — pre-computed thumbnails for timeline scrubbing
+4. **Media database** — fast, concurrent indexing of all imported assets
+5. **Filesystem monitoring** — automatic detection of file changes, moves, and deletions
+6. **Background processing pipelines** — multi-threaded, prioritized job queues for all asset processing
+
+### Core Tenets
+
+1. **Background-First Architecture:** All heavy processing (proxy generation, waveform caching, thumbnail extraction) happens on background thread pools. The UI thread never blocks.
+2. **Incremental & Resumable:** All processing jobs can be paused, resumed, and resumed after crashes. Partial progress is never lost.
+3. **Cache-Invalidation Aware:** When source files change, caches are automatically invalidated and regenerated.
+4. **Pure Rust, Zero External Dependencies:** Uses `redb` (MIT) for the embedded database. No SQLite, no C/C++ bindings.
+5. **Real-Time Safe Reads:** Reading from caches (waveform peaks, thumbnails) is allocation-free and lock-free, safe for the audio/render thread.
+6. **Pure MIT Licensing:** No GPL/LGPL/MPL dependencies. Enforced via `cargo-deny` in CI.
+7. **Composable Architecture:** Each sub-crate is independently useful. A developer can use just the cache, just the proxy generator, or just the database.
+
+---
+
+## 2. Ecosystem Integration
+
+`tpt-av-asset` sits in the **Performance Layer** of the TPT AV Stack, working behind the scenes to accelerate both `tpt-audio` and `tpt-visual`.
+
+| Crate | Role | Relationship to `tpt-av-asset` |
+| :--- | :--- | :--- |
+| **`tpt-kinetix`** | Media containers, video codecs | Source of video frames for thumbnail generation. |
+| **`tpt-cadence`** | Audio codecs | Source of PCM data for waveform peak generation. |
+| **`tpt-audio`** | Audio processing | Reads waveform peaks from `tpt-av-asset` for UI rendering. |
+| **`tpt-visual`** | Video processing | Reads video thumbnails from `tpt-av-asset` for timeline scrubbing. |
+| **`tpt-av-asset`** | **Asset management (this repo)** | Background proxy generation, caching, indexing, and file watching. |
+
+### Data Flow
+User imports "4K_interview.mp4" (2 hours, 50GB)
+↓
+tpt-av-asset-watcher detects new file
+↓
+tpt-av-asset-db indexes file metadata (duration, resolution, codecs)
+↓
+tpt-av-asset-pipeline schedules background jobs:
+Job 1: Generate proxy (1080p, low bitrate)
+Job 2: Extract video thumbnails (every 1 second)
+Job 3: Extract audio track
+Job 4: Generate waveform peaks for audio track
+↓
+Background thread pool processes jobs (prioritized, resumable)
+↓
+tpt-av-asset-cache stores results in embedded database
+↓
+tpt-audio / tpt-visual read from cache (real-time safe, instant)
+
+
+---
+
+## 3. Repository Architecture (Cargo Workspace)
+
+All sub-crates share the `tpt-av-asset-` prefix for ecosystem coherence and clean namespace resolution on crates.io.
+
+```text
+tpt-av-asset/                        # GitHub Repository / Workspace Root
+├── Cargo.toml                       # Workspace manifest
+├── deny.toml                        # cargo-deny license audit config
+├── LICENSE-MIT
+├── README.md
+├── DESIGN.md                        # This file
+│
+├── tpt-av-asset-utils/              # Shared types, error handling
+│   ├── src/
+│   │   ├── lib.rs
+│   │   ├── asset_id.rs              # Unique asset identifiers (content-addressed)
+│   │   ├── media_info.rs            # Media metadata (duration, resolution, codecs)
+│   │   ├── time_range.rs            # Time range types
+│   │   ├── priority.rs              # Job priority levels
+│   │   ├── progress.rs              # Progress reporting types
+│   │   └── error.rs                 # `AssetError` enum
+│   └── Cargo.toml
+│
+├── tpt-av-asset-db/                 # Embedded media database
+│   ├── src/
+│   │   ├── lib.rs
+│   │   ├── schema.rs                # Database schema (tables, indexes)
+│   │   ├── asset_table.rs           # Asset metadata storage
+│   │   ├── cache_table.rs           # Cache entry tracking
+│   │   ├── job_table.rs             # Job queue persistence
+│   │   ├── transaction.rs           # Atomic transactions
+│   │   └── query.rs                 # Query API
+│   ├── Cargo.toml
+│   └── tests/
+│
+├── tpt-av-asset-cache/              # Waveform & thumbnail caching
+│   ├── src/
+│   │   ├── lib.rs
+│   │   ├── waveform.rs              # Waveform peak cache (min/max per chunk)
+│   │   ├── thumbnail.rs             # Video thumbnail cache
+│   │   ├── proxy.rs                 # Proxy file cache
+│   │   ├── storage.rs               # On-disk cache storage (file-based)
+│   │   ├── reader.rs                # Real-time safe cache reader
+│   │   └── invalidation.rs          # Cache invalidation logic
+│   ├── Cargo.toml
+│   └── tests/
+│
+├── tpt-av-asset-proxy/              # Proxy generation engine
+│   ├── src/
+│   │   ├── lib.rs
+│   │   ├── video_proxy.rs           # Video proxy generation (downscale, re-encode)
+│   │   ├── audio_proxy.rs           # Audio proxy generation (downsample, convert)
+│   │   ├── profile.rs               # Proxy profiles (quality presets)
+│   │   ├── encoder.rs               # Lightweight encoder (wraps tpt-kinetix)
+│   │   └── generator.rs             # High-level proxy generation API
+│   ├── Cargo.toml
+│   └── tests/
+│
+├── tpt-av-asset-watcher/            # Filesystem monitoring
+│   ├── src/
+│   │   ├── lib.rs
+│   │   ├── watcher.rs               # Cross-platform file watcher
+│   │   ├── event.rs                 # File events (created, modified, deleted, moved)
+│   │   ├── debounce.rs              # Event debouncing
+│   │   └── backend/                 # Platform-specific backends
+│   │       ├── inotify.rs           # Linux
+│   │       ├── fsevents.rs          # macOS
+│   │       └── read_dir.rs          # Windows (fallback)
+│   ├── Cargo.toml
+│   └── tests/
+│
+├── tpt-av-asset-pipeline/           # Background processing orchestration
+│   ├── src/
+│   │   ├── lib.rs
+│   │   ├── job.rs                   # Job trait and types
+│   │   ├── queue.rs                 # Prioritized job queue
+│   │   ├── worker.rs                # Worker thread pool
+│   │   ├── scheduler.rs             # Job scheduler (priorities, dependencies)
+│   │   ├── progress.rs              # Progress tracking and reporting
+│   │   └── pipeline.rs              # High-level pipeline API
+│   ├── Cargo.toml
+│   └── tests/
+│
+└── examples/                        # Demos and integration tests
+    ├── import_media.rs              # Import a media file and generate all caches
+    ├── waveform_viewer.rs           # Display waveform peaks from cache
+    ├── thumbnail_browser.rs         # Browse video thumbnails
+    └── proxy_generator.rs           # Generate proxies for a folder of videos
+
+4. Core API Design
+4.1. Asset Identification (tpt-av-asset-utils)
+
+/// A unique, content-addressed asset identifier.
+///
+/// Computed from the file path + modification time + size.
+/// This ensures that if a file is modified, it gets a new ID,
+/// and old caches are automatically invalidated.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct AssetId {
+    /// Hash of the file path.
+    path_hash: u64,
+    /// Modification time (Unix timestamp in milliseconds).
+    mtime_ms: u64,
+    /// File size in bytes.
+    size: u64,
+}
+
+impl AssetId {
+    /// Computes an asset ID from a file path.
+    pub fn from_path(path: &Path) -> Result<Self, AssetError> {
+        let metadata = path.metadata()?;
+        let mtime = metadata.modified()?;
+        let mtime_ms = mtime.duration_since(UNIX_EPOCH)?.as_millis() as u64;
+        
+        Ok(Self {
+            path_hash: hash_path(path),
+            mtime_ms,
+            size: metadata.len(),
+        })
+    }
+}
+
+/// Media metadata extracted from a file.
+#[derive(Debug, Clone)]
+pub struct MediaInfo {
+    /// Asset identifier.
+    pub id: AssetId,
+    /// File path.
+    pub path: PathBuf,
+    /// File name.
+    pub name: String,
+    /// File size in bytes.
+    pub size: u64,
+    /// Media type (audio, video, image).
+    pub media_type: MediaType,
+    /// Duration in seconds (if applicable).
+    pub duration_secs: Option<f64>,
+    /// Video-specific info.
+    pub video: Option<VideoInfo>,
+    /// Audio-specific info.
+    pub audio: Option<AudioInfo>,
+}
+
+/// Video-specific metadata.
+#[derive(Debug, Clone)]
+pub struct VideoInfo {
+    /// Width in pixels.
+    pub width: u32,
+    /// Height in pixels.
+    pub height: u32,
+    /// Frame rate (e.g., 24.0, 29.97, 30.0, 60.0).
+    pub frame_rate: f64,
+    /// Codec name (e.g., "h264", "av1", "prores").
+    pub codec: String,
+    /// Pixel format (e.g., "yuv420p", "rgb24").
+    pub pixel_format: String,
+    /// Bit rate in bits per second.
+    pub bit_rate: Option<u64>,
+}
+
+/// Audio-specific metadata.
+#[derive(Debug, Clone)]
+pub struct AudioInfo {
+    /// Sample rate in Hz.
+    pub sample_rate: u32,
+    /// Number of channels.
+    pub channels: u16,
+    /// Bit depth.
+    pub bit_depth: u16,
+    /// Codec name (e.g., "pcm", "aac", "opus").
+    pub codec: String,
+    /// Bit rate in bits per second.
+    pub bit_rate: Option<u64>,
+}
+
+4.2. Media Database (tpt-av-asset-db)
+
+/// The embedded media database.
+///
+/// Uses `redb` (MIT-licensed) for fast, concurrent, embedded storage.
+pub struct AssetDb {
+    /// The underlying redb database.
+    db: redb::Database,
+}
+
+impl AssetDb {
+    /// Opens or creates a database at the specified path.
+    pub fn open(path: &Path) -> Result<Self, AssetError>;
+
+    /// Inserts or updates an asset in the database.
+    pub fn upsert_asset(&self, info: &MediaInfo) -> Result<(), AssetError>;
+
+    /// Retrieves an asset by ID.
+    pub fn get_asset(&self, id: AssetId) -> Result<Option<MediaInfo>, AssetError>;
+
+    /// Lists all assets in the database.
+    pub fn list_assets(&self) -> Result<Vec<MediaInfo>, AssetError>;
+
+    /// Removes an asset from the database.
+    pub fn remove_asset(&self, id: AssetId) -> Result<(), AssetError>;
+
+    /// Records that a cache entry exists for an asset.
+    pub fn record_cache_entry(
+        &self,
+        asset_id: AssetId,
+        cache_type: CacheType,
+        cache_path: &Path,
+    ) -> Result<(), AssetError>;
+
+    /// Checks if a cache entry exists for an asset.
+    pub fn has_cache_entry(
+        &self,
+        asset_id: AssetId,
+        cache_type: CacheType,
+    ) -> Result<bool, AssetError>;
+
+    /// Invalidates all cache entries for an asset.
+    pub fn invalidate_caches(&self, asset_id: AssetId) -> Result<(), AssetError>;
+}
+
+/// Types of cache entries.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CacheType {
+    /// Waveform peaks (audio).
+    WaveformPeaks,
+    /// Video thumbnails.
+    VideoThumbnails,
+    /// Video proxy file.
+    VideoProxy,
+    /// Audio proxy file.
+    AudioProxy,
+}
+
+4.3. Waveform Cache (tpt-av-asset-cache)
+
+/// Waveform peak cache for audio assets.
+///
+/// Stores min/max peak values for fixed-size chunks of audio.
+/// This allows the UI to render waveforms at any zoom level
+/// without re-reading the source audio file.
+pub struct WaveformCache {
+    /// Chunk size in samples (e.g., 1024, 4096).
+    chunk_size: usize,
+    /// Sample rate of the cached peaks.
+    sample_rate: u32,
+    /// Cached peaks (stored on disk).
+    storage: CacheStorage,
+}
+
+/// A chunk of waveform peaks.
+#[derive(Debug, Clone)]
+pub struct WaveformChunk {
+    /// Chunk index.
+    pub index: usize,
+    /// Minimum sample value in the chunk (0.0 to 1.0).
+    pub min: f32,
+    /// Maximum sample value in the chunk (0.0 to 1.0).
+    pub max: f32,
+    /// RMS (root mean square) value for loudness visualization.
+    pub rms: f32,
+}
+
+impl WaveformCache {
+    /// Creates or opens a waveform cache for an asset.
+    pub fn open(asset_id: AssetId, storage: &CacheStorage) -> Result<Self, AssetError>;
+
+    /// Writes a chunk of peaks to the cache.
+    pub fn write_chunk(&mut self, chunk: &WaveformChunk) -> Result<(), AssetError>;
+
+    /// Reads a chunk of peaks from the cache.
+    ///
+    /// # Real-Time Safety
+    ///
+    /// This method is allocation-free and lock-free.
+    /// Safe to call from the audio thread.
+    pub fn read_chunk(&self, index: usize) -> Result<Option<WaveformChunk>, AssetError>;
+
+    /// Reads a range of chunks (for rendering a visible portion of the waveform).
+    pub fn read_range(
+        &self,
+        start_index: usize,
+        end_index: usize,
+    ) -> Result<Vec<WaveformChunk>, AssetError>;
+
+    /// Returns the total number of chunks in the cache.
+    pub fn chunk_count(&self) -> usize;
+}
+
+/// Generates waveform peaks from an audio file.
+pub struct WaveformGenerator {
+    /// Chunk size in samples.
+    chunk_size: usize,
+    /// Target sample rate for peaks.
+    sample_rate: u32,
+}
+
+impl WaveformGenerator {
+    /// Creates a new waveform generator.
+    pub fn new(chunk_size: usize, sample_rate: u32) -> Self;
+
+    /// Generates waveform peaks from an audio file.
+    ///
+    /// This method reads the audio file using `tpt-cadence`,
+    /// computes min/max/RMS for each chunk, and writes to the cache.
+    pub fn generate(
+        &self,
+        audio_path: &Path,
+        cache: &mut WaveformCache,
+        progress: &ProgressReporter,
+    ) -> Result<(), AssetError> {
+        // 1. Open audio file with tpt-cadence
+        // 2. Read samples in chunks
+        // 3. Compute min/max/RMS for each chunk
+        // 4. Write chunks to cache
+        // 5. Report progress
+        todo!()
+    }
+}
+
+4.4. Thumbnail Cache (tpt-av-asset-cache)
+
+/// Video thumbnail cache.
+///
+/// Stores pre-computed thumbnails at regular intervals
+/// (e.g., one thumbnail per second) for fast timeline scrubbing.
+pub struct ThumbnailCache {
+    /// Interval between thumbnails in seconds.
+    interval_secs: f64,
+    /// Thumbnail resolution.
+    resolution: (u32, u32),
+    /// Cached thumbnails (stored on disk).
+    storage: CacheStorage,
+}
+
+/// A cached video thumbnail.
+#[derive(Debug, Clone)]
+pub struct Thumbnail {
+    /// Time position in seconds.
+    pub time_secs: f64,
+    /// Thumbnail image data (RGB or RGBA).
+    pub data: Vec<u8>,
+    /// Width in pixels.
+    pub width: u32,
+    /// Height in pixels.
+    pub height: u32,
+}
+
+impl ThumbnailCache {
+    /// Creates or opens a thumbnail cache for an asset.
+    pub fn open(asset_id: AssetId, storage: &CacheStorage) -> Result<Self, AssetError>;
+
+    /// Writes a thumbnail to the cache.
+    pub fn write_thumbnail(&mut self, thumbnail: &Thumbnail) -> Result<(), AssetError>;
+
+    /// Reads a thumbnail from the cache.
+    pub fn read_thumbnail(&self, time_secs: f64) -> Result<Option<Thumbnail>, AssetError>;
+
+    /// Reads the nearest thumbnail to a time position.
+    pub fn read_nearest(&self, time_secs: f64) -> Result<Option<Thumbnail>, AssetError>;
+
+    /// Returns the total number of thumbnails in the cache.
+    pub fn thumbnail_count(&self) -> usize;
+}
+
+/// Generates video thumbnails from a video file.
+pub struct ThumbnailGenerator {
+    /// Interval between thumbnails in seconds.
+    interval_secs: f64,
+    /// Thumbnail resolution.
+    resolution: (u32, u32),
+}
+
+impl ThumbnailGenerator {
+    /// Creates a new thumbnail generator.
+    pub fn new(interval_secs: f64, resolution: (u32, u32)) -> Self;
+
+    /// Generates thumbnails from a video file.
+    pub fn generate(
+        &self,
+        video_path: &Path,
+        cache: &mut ThumbnailCache,
+        progress: &ProgressReporter,
+    ) -> Result<(), AssetError> {
+        // 1. Open video file with tpt-kinetix
+        // 2. Decode frames at regular intervals
+        // 3. Resize to thumbnail resolution
+        // 4. Write thumbnails to cache
+        // 5. Report progress
+        todo!()
+    }
+}
+
+4.5. Proxy Generation (tpt-av-asset-proxy)
+
+/// Proxy generation profile.
+#[derive(Debug, Clone)]
+pub struct ProxyProfile {
+    /// Profile name (e.g., "1080p Low", "720p Medium").
+    pub name: String,
+    /// Target resolution.
+    pub resolution: (u32, u32),
+    /// Target frame rate (None = same as source).
+    pub frame_rate: Option<f64>,
+    /// Video codec (e.g., "h264", "prores_proxy").
+    pub video_codec: String,
+    /// Video bit rate in bits per second.
+    pub video_bit_rate: u64,
+    /// Audio codec (e.g., "aac", "pcm").
+    pub audio_codec: String,
+    /// Audio bit rate in bits per second.
+    pub audio_bit_rate: u64,
+}
+
+impl ProxyProfile {
+    /// Returns a preset profile for 1080p low-quality proxy.
+    pub fn proxy_1080p_low() -> Self;
+
+    /// Returns a preset profile for 720p medium-quality proxy.
+    pub fn proxy_720p_medium() -> Self;
+
+    /// Returns a preset profile for audio-only proxy (WAV → FLAC).
+    pub fn audio_proxy_flac() -> Self;
+}
+
+/// Proxy generation engine.
+pub struct ProxyGenerator {
+    /// Proxy profile.
+    profile: ProxyProfile,
+}
+
+impl ProxyGenerator {
+    /// Creates a new proxy generator.
+    pub fn new(profile: ProxyProfile) -> Self;
+
+    /// Generates a proxy for a video file.
+    pub fn generate_video_proxy(
+        &self,
+        source_path: &Path,
+        output_path: &Path,
+        progress: &ProgressReporter,
+    ) -> Result<(), AssetError> {
+        // 1. Open source video with tpt-kinetix
+        // 2. Decode frames
+        // 3. Resize to target resolution
+        // 4. Re-encode with lightweight codec
+        // 5. Write to output file
+        // 6. Report progress
+        todo!()
+    }
+
+    /// Generates a proxy for an audio file.
+    pub fn generate_audio_proxy(
+        &self,
+        source_path: &Path,
+        output_path: &Path,
+        progress: &ProgressReporter,
+    ) -> Result<(), AssetError> {
+        // 1. Open source audio with tpt-cadence
+        // 2. Decode PCM
+        // 3. Re-encode with lightweight codec (e.g., FLAC)
+        // 4. Write to output file
+        // 5. Report progress
+        todo!()
+    }
+}
+
+4.6. Filesystem Watcher (tpt-av-asset-watcher)
+
+/// Filesystem watcher for media directories.
+pub struct MediaWatcher {
+    /// Watched directories.
+    directories: Vec<PathBuf>,
+    /// Event receiver.
+    receiver: Receiver<FileEvent>,
+    /// Backend (platform-specific).
+    backend: Box<dyn WatcherBackend>,
+}
+
+/// A file event.
+#[derive(Debug, Clone)]
+pub struct FileEvent {
+    /// Event type.
+    pub event_type: FileEventType,
+    /// File path.
+    pub path: PathBuf,
+    /// Timestamp.
+    pub timestamp: SystemTime,
+}
+
+/// File event types.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FileEventType {
+    /// File was created.
+    Created,
+    /// File was modified.
+    Modified,
+    /// File was deleted.
+    Deleted,
+    /// File was renamed/moved.
+    Renamed { old_path: PathBuf },
+}
+
+impl MediaWatcher {
+    /// Creates a new media watcher.
+    pub fn new() -> Result<Self, AssetError>;
+
+    /// Adds a directory to watch.
+    pub fn watch(&mut self, directory: &Path) -> Result<(), AssetError>;
+
+    /// Stops watching a directory.
+    pub fn unwatch(&mut self, directory: &Path) -> Result<(), AssetError>;
+
+    /// Receives the next file event (blocking).
+    pub fn recv(&mut self) -> Result<FileEvent, AssetError>;
+
+    /// Receives the next file event (non-blocking).
+    pub fn try_recv(&mut self) -> Result<Option<FileEvent>, AssetError>;
+}
+
+4.7. Background Processing Pipeline (tpt-av-asset-pipeline)
+
+/// A background processing job.
+pub trait Job: Send + Sync {
+    /// Returns the job ID.
+    fn id(&self) -> JobId;
+
+    /// Returns the job priority.
+    fn priority(&self) -> Priority;
+
+    /// Executes the job.
+    fn execute(&mut self, progress: &ProgressReporter) -> Result<(), AssetError>;
+
+    /// Returns the asset ID this job is for.
+    fn asset_id(&self) -> AssetId;
+}
+
+/// Job priority levels.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Priority {
+    /// Critical (UI-blocking, highest priority).
+    Critical,
+    /// High (user-initiated, high priority).
+    High,
+    /// Normal (background processing).
+    Normal,
+    /// Low (deferred processing).
+    Low,
+}
+
+/// The background processing pipeline.
+pub struct ProcessingPipeline {
+    /// Job queue.
+    queue: JobQueue,
+    /// Worker thread pool.
+    workers: WorkerPool,
+    /// Progress tracker.
+    progress: ProgressTracker,
+}
+
+impl ProcessingPipeline {
+    /// Creates a new processing pipeline.
+    pub fn new(num_workers: usize) -> Result<Self, AssetError>;
+
+    /// Submits a job to the pipeline.
+    pub fn submit(&self, job: Box<dyn Job>) -> Result<JobId, AssetError>;
+
+    /// Cancels a job.
+    pub fn cancel(&self, job_id: JobId) -> Result<(), AssetError>;
+
+    /// Returns the progress of a job.
+    pub fn get_progress(&self, job_id: JobId) -> Result<Option<JobProgress>, AssetError>;
+
+    /// Waits for a job to complete.
+    pub fn wait_for(&self, job_id: JobId) -> Result<(), AssetError>;
+
+    /// Starts the pipeline (spawns worker threads).
+    pub fn start(&mut self) -> Result<(), AssetError>;
+
+    /// Stops the pipeline (gracefully shuts down workers).
+    pub fn stop(&mut self) -> Result<(), AssetError>;
+}
+
+/// High-level asset import API.
+pub struct AssetImporter {
+    /// Processing pipeline.
+    pipeline: ProcessingPipeline,
+    /// Media database.
+    db: AssetDb,
+    /// Cache storage.
+    storage: CacheStorage,
+}
+
+impl AssetImporter {
+    /// Creates a new asset importer.
+    pub fn new(
+        pipeline: ProcessingPipeline,
+        db: AssetDb,
+        storage: CacheStorage,
+    ) -> Self;
+
+    /// Imports a media file and generates all caches.
+    ///
+    /// This method:
+    /// 1. Extracts media metadata
+    /// 2. Inserts into database
+    /// 3. Schedules background jobs for proxy, waveform, thumbnails
+    /// 4. Returns immediately (jobs run in background)
+    pub fn import(&self, path: &Path) -> Result<AssetId, AssetError> {
+        // 1. Compute asset ID
+        // 2. Extract media info
+        // 3. Insert into database
+        // 4. Schedule waveform generation job
+        // 5. Schedule thumbnail generation job (if video)
+        // 6. Schedule proxy generation job
+        // 7. Return asset ID
+        todo!()
+    }
+}
+
+5. Performance Architecture
+5.1. Multi-Level Caching
+
+┌─────────────────────────────────────────────────────────┐
+│  Level 1: In-Memory Cache (LRU, hot data)               │
+│  - Recently accessed waveform chunks                    │
+│  - Recently accessed thumbnails                         │
+│  - Fast, allocation-free reads                          │
+└─────────────────────────────────────────────────────────┘
+                         ↓ (cache miss)
+┌─────────────────────────────────────────────────────────┐
+│  Level 2: On-Disk Cache (file-based)                    │
+│  - All waveform peaks                                   │
+│  - All video thumbnails                                 │
+│  - Proxy files                                          │
+│  - Persistent across restarts                           │
+└─────────────────────────────────────────────────────────┘
+                         ↓ (cache miss)
+┌─────────────────────────────────────────────────────────┐
+│  Level 3: Source File (slow, decode on-demand)          │
+│  - Original media files                                 │
+│  - Only accessed when cache is invalidated              │
+└─────────────────────────────────────────────────────────┘
+
+5.2. Thread Architecture
+
+Main/UI Thread (Can Allocate, Can Block)
+│
+│  Import media files
+│  Query database
+│  Read from cache (real-time safe)
+│  Update UI
+│
+Background Worker Threads (Can Allocate, Can Block)
+│
+│  Generate waveform peaks
+│  Generate video thumbnails
+│  Generate proxy files
+│  Process job queue
+│
+File Watcher Thread (Async, Can Block)
+│
+│  Monitor filesystem changes
+│  Detect file modifications
+│  Trigger cache invalidation
+│
+Audio/Render Thread (Real-Time Safe, Zero Allocation)
+│
+│  Read waveform peaks from cache
+│  Read thumbnails from cache
+│  Never write to cache
+│  Never block
+
+5.3. Cache Storage Layout
+
+~/.tpt-av-asset/
+├── db/
+│   └── assets.redb              # Embedded database
+├── cache/
+│   ├── waveforms/
+│   │   ├── {asset_id_hash}.peaks    # Waveform peak data
+│   │   └── ...
+│   ├── thumbnails/
+│   │   ├── {asset_id_hash}/
+│   │   │   ├── 000000.jpg           # Thumbnail at 0s
+│   │   │   ├── 000001.jpg           # Thumbnail at 1s
+│   │   │   └── ...
+│   │   └── ...
+│   └── proxies/
+│       ├── {asset_id_hash}_proxy.mp4    # Video proxy
+│       ├── {asset_id_hash}_proxy.flac   # Audio proxy
+│       └── ...
+└── logs/
+    └── pipeline.log
+
+6. Roadmap
+Phase 1: Foundation & Database (Current)
+tpt-av-asset-utils with shared types (AssetId, MediaInfo, Priority)
+tpt-av-asset-db with redb integration
+Database schema for assets, cache entries, and jobs
+Unit tests for database operations
+cargo-deny CI pipeline enforcing pure MIT
+Phase 2: Waveform Caching
+tpt-av-asset-cache with waveform peak storage
+WaveformGenerator that reads audio with tpt-cadence
+Real-time safe waveform reader
+Integration tests with various audio formats
+Phase 3: Thumbnail Caching
+Video thumbnail storage
+ThumbnailGenerator that reads video with tpt-kinetix
+Thumbnail resizing and compression
+Integration tests with various video formats
+Phase 4: Proxy Generation
+tpt-av-asset-proxy with proxy profiles
+Video proxy generation (downscale, re-encode)
+Audio proxy generation (convert to FLAC)
+Progress reporting and cancellation
+Phase 5: Filesystem Watching
+tpt-av-asset-watcher with cross-platform backends
+Event debouncing
+Automatic cache invalidation on file changes
+Integration tests on Linux, macOS, Windows
+Phase 6: Background Pipeline
+tpt-av-asset-pipeline with job queue and worker pool
+Prioritized job scheduling
+Progress tracking and reporting
+Job cancellation and resumption
+High-level AssetImporter API
+7. Dependency & Licensing Rules
+Allowed Dependencies (Permissive Only)
+tpt-av-asset-utils (internal)
+tpt-av-asset-db (internal)
+tpt-av-asset-cache (internal)
+tpt-av-asset-proxy (internal)
+tpt-av-asset-watcher (internal)
+tpt-av-asset-pipeline (internal)
+tpt-kinetix (MIT) — for reading video files
+tpt-cadence (MIT) — for reading audio files
+redb (MIT/Apache) — embedded database
+notify (MIT/Apache/CC0) — filesystem watching (wrapped by tpt-av-asset-watcher)
+image (MIT) — thumbnail resizing and encoding
+serde (MIT/Apache) — serialization
+log (MIT/Apache) — logging facade
+Banned Dependencies
+sqlite3-sys (public domain, but C-based)
+ffmpeg-sys / ffmpeg-next (LGPL/GPL)
+Any crate with GPL, LGPL, AGPL, or MPL in its dependency tree
+Enforcement
+The deny.toml file enforces this automatically:
+
+[licenses]
+unlicensed = "deny"
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "CC0-1.0",
+]
+deny = [
+    "GPL-2.0",
+    "GPL-3.0",
+    "LGPL-2.1",
+    "LGPL-3.0",
+    "AGPL-3.0",
+    "MPL-2.0",
+]
+
+8. Workspace Cargo.toml
+[workspace]
+resolver = "2"
+members = [
+    "tpt-av-asset-utils",
+    "tpt-av-asset-db",
+    "tpt-av-asset-cache",
+    "tpt-av-asset-proxy",
+    "tpt-av-asset-watcher",
+    "tpt-av-asset-pipeline",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/tpt-solutions/tpt-av-asset"
+rust-version = "1.75"
+
+[workspace.dependencies]
+tpt-av-asset-utils = { path = "tpt-av-asset-utils", version = "0.1.0" }
+tpt-av-asset-db = { path = "tpt-av-asset-db", version = "0.1.0" }
+tpt-av-asset-cache = { path = "tpt-av-asset-cache", version = "0.1.0" }
+tpt-av-asset-proxy = { path = "tpt-av-asset-proxy", version = "0.1.0" }
+tpt-av-asset-watcher = { path = "tpt-av-asset-watcher", version = "0.1.0" }
+tpt-av-asset-pipeline = { path = "tpt-av-asset-pipeline", version = "0.1.0" }
+tpt-kinetix = { git = "https://github.com/tpt-solutions/tpt-kinetix", version = "0.1.0" }
+tpt-cadence = { git = "https://github.com/tpt-solutions/tpt-cadence", version = "0.1.0" }
+redb = "2.1"
+notify = "6.1"
+image = "0.25"
+serde = { version = "1.0", features = ["derive"] }
+log = "0.4"
+
+9. Contributing & License
+This project is released under the MIT License.
+By contributing to tpt-av-asset, you agree that:
+Your code will be licensed under the same pure MIT terms.
+You will not introduce any dependency that is GPL, LGPL, AGPL, or MPL licensed.
+All cache reads must be real-time safe (allocation-free, lock-free).
+All background jobs must support cancellation and progress reporting.
+This ensures tpt-av-asset remains free, open, and unencumbered by copyleft restrictions for all future media asset management software development.
+
+
+---
+
+### Your Next Steps
+
+1. **Create the repo:** `github.com/tpt-solutions/tpt-av-asset`
+2. **Initialize the workspace** with the `Cargo.toml` above
+3. **Start with `tpt-av-asset-utils`** — define `AssetId`, `MediaInfo`, `Priority`, and error types
+4. **Build `tpt-av-asset-db`** — set up `redb` with the schema for assets, cache entries, and jobs
+5. **Implement `tpt-av-asset-cache`** — start with waveform peak caching (most critical for audio apps)
+6. **Write integration tests** that import a WAV file, generate waveform peaks, and read them back
+
+This repo is the "performance backbone" that makes everything else feel professional. Without it, your audio and video apps will feel sluggish when working with large files. With it, they'll feel instant.
