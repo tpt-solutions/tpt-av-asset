@@ -22,7 +22,8 @@ where
     P: AsRef<Path>,
 {
     let path = path.as_ref();
-    let mut enc = TkvEncoder::new(path, width, height, frame_rate)?;
+    let mut enc: Box<dyn VideoEncoder> =
+        Box::new(TkvEncoder::new(path, width, height, frame_rate)?);
     let frame_count = (duration_secs * frame_rate).round().max(0.0) as u32;
     let mut data = vec![0u8; frame_bytes(width, height)];
     for index in 0..frame_count {

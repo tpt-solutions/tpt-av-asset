@@ -128,7 +128,7 @@ pub trait VideoEncoder: Send {
     ///
     /// # Errors
     /// Returns [`Error`] on I/O failure.
-    fn finish(self) -> Result<()>;
+    fn finish(self: Box<Self>) -> Result<()>;
 }
 
 /// Opens an encoder writing the TKV container at `path`.

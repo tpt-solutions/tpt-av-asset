@@ -16,7 +16,8 @@ pub fn write_test_wav(
     sample_rate: u32,
     channels: u16,
 ) -> Result<()> {
-    let mut enc = WavEncoder::new(path, AudioSpec { sample_rate, channels })?;
+    let mut enc: Box<dyn AudioEncoder> =
+        Box::new(WavEncoder::new(path, AudioSpec { sample_rate, channels })?);
     let total = (duration_secs * sample_rate as f64) as u64;
     const BLOCK: usize = 4_096;
     let mut block = Vec::with_capacity(BLOCK);

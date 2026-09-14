@@ -153,6 +153,16 @@ impl TkvEncoder {
     }
 }
 
+impl TkvEncoder {
+    fn finish_impl(mut self) -> Result<()> {
+        self.writer.flush()?;
+        let mut file = self.writer.into_inner().map_err(|e| e.into_error())?;
+        file.seek(SeekFrom::Start(20))?;
+        file.write_all(&self.frame_count.to_le_bytes())?;
+        Ok(())
+    }
+}
+
 impl crate::VideoEncoder for TkvEncoder {
     fn write_frame(&mut self, frame: &Frame) -> Result<()> {
         if frame.width != self.width || frame.height != self.height {
@@ -175,12 +185,8 @@ impl crate::VideoEncoder for TkvEncoder {
         Ok(())
     }
 
-    fn finish(mut self) -> Result<()> {
-        self.writer.flush()?;
-        let mut file = self.writer.into_inner().map_err(|e| e.into_error())?;
-        file.seek(SeekFrom::Start(20))?;
-        file.write_all(&self.frame_count.to_le_bytes())?;
-        Ok(())
+    fn finish(self: Box<Self>) -> Result<()> {
+        TkvEncoder::finish_impl(*self)
     }
 }
 

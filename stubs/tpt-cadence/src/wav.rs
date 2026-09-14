@@ -13,7 +13,6 @@ const FORMAT_FLOAT: u16 = 3;
 pub struct WavDecoder {
     reader: BufReader<File>,
     info: AudioInfo,
-    data_start: u64,
     data_len: u32,
     bytes_read: u32,
     bytes_per_sample: usize,
@@ -125,7 +124,6 @@ impl WavDecoder {
                 bit_rate: Some(byte_rate * 8),
                 duration_secs,
             },
-            data_start,
             data_len,
             bytes_read: 0,
             bytes_per_sample,
@@ -178,8 +176,6 @@ impl crate::AudioDecoder for WavDecoder {
 /// 16-bit PCM WAV encoder.
 pub struct WavEncoder {
     writer: BufWriter<File>,
-    sample_rate: u32,
-    channels: u16,
     bytes_written: u32,
 }
 
@@ -217,8 +213,6 @@ impl WavEncoder {
 
         Ok(Self {
             writer,
-            sample_rate: spec.sample_rate,
-            channels: spec.channels,
             bytes_written: 0,
         })
     }
@@ -240,7 +234,13 @@ impl crate::AudioEncoder for WavEncoder {
         Ok(())
     }
 
-    fn finish(mut self) -> Result<()> {
+    fn finish(self: Box<Self>) -> Result<()> {
+        WavEncoder::finish_impl(*self)
+    }
+}
+
+impl WavEncoder {
+    fn finish_impl(mut self) -> Result<()> {
         self.writer.flush()?;
         let data_len = self.bytes_written;
         let mut file = self
@@ -299,7 +299,7 @@ mod tests {
         let mut enc = WavEncoder::new(&path, AudioSpec { sample_rate: 4_000, channels: 1 }).unwrap();
         let samples: Vec<f32> = (0..4_000).map(|i| ((i as f32) * 0.01).sin() * 0.25).collect();
         enc.write_samples(&samples).unwrap();
-        enc.finish().unwrap();
+        Box::new(enc).finish().unwrap();
 
         let mut dec = WavDecoder::open(&path).unwrap();
         assert_eq!(dec.info().sample_rate, 4_000);
