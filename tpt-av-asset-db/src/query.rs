@@ -32,13 +32,25 @@ impl AssetDb {
     /// # Errors
     /// Returns [`AssetError::Db`] on storage failure.
     pub fn get_asset_by_path(&self, path: &Path) -> Result<Option<MediaInfo>, AssetError> {
+        Ok(self.get_assets_by_path(path)?.into_iter().next())
+    }
+
+    /// Finds every asset registered at a file path — historical versions
+    /// included, since a modified file produces a new [`AssetId`] while the
+    /// old row (and its caches) may still linger. Cache invalidation uses
+    /// this to sweep stale versions too.
+    ///
+    /// # Errors
+    /// Returns [`AssetError::Db`] on storage failure.
+    pub fn get_assets_by_path(&self, path: &Path) -> Result<Vec<MediaInfo>, AssetError> {
         let target = std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
         Ok(self
             .list_assets()?
             .into_iter()
-            .find(|info| {
+            .filter(|info| {
                 let stored = std::fs::canonicalize(&info.path).unwrap_or_else(|_| info.path.clone());
                 stored == target
-            }))
+            })
+            .collect())
     }
 }

@@ -40,6 +40,12 @@ pub struct AssetDb {
     db: Arc<redb::Database>,
 }
 
+impl std::fmt::Debug for AssetDb {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AssetDb").finish_non_exhaustive()
+    }
+}
+
 impl AssetDb {
     /// Opens or creates a database at the specified path, creating parent
     /// directories and initializing the schema.
