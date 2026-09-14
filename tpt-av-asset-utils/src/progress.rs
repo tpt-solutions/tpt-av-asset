@@ -13,7 +13,7 @@
 
 use std::fmt;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use crate::error::AssetError;
 
@@ -41,8 +41,9 @@ struct Inner {
     cancelled: AtomicBool,
     // `Fn` callbacks are callable through a shared reference, so no lock is
     // needed: concurrent reporters can invoke the callback simultaneously,
-    // and a callback may safely re-enter `report`.
-    callback: Option<Callback>,
+    // and a callback may safely re-enter `report`. `OnceLock` allows the
+    // self-referential construction in `with_self_callback`.
+    callback: OnceLock<Callback>,
 }
 
 /// Progress callback + cancellation token, cheap to clone and share across
@@ -57,7 +58,7 @@ impl Default for ProgressReporter {
         Self {
             inner: Arc::new(Inner {
                 cancelled: AtomicBool::new(false),
-                callback: None,
+                callback: OnceLock::new(),
             }),
         }
     }
@@ -80,12 +81,36 @@ impl ProgressReporter {
 
     /// Creates a reporter invoking `callback` on every progress report.
     pub fn with_callback(callback: impl Fn(ProgressEvent) + Send + Sync + 'static) -> Self {
-        Self {
-            inner: Arc::new(Inner {
-                cancelled: AtomicBool::new(false),
-                callback: Some(Box::new(callback)),
-            }),
-        }
+        let reporter = Self::default();
+        let _ = reporter.inner.callback.set(Box::new(callback));
+        reporter
+    }
+
+    /// Creates a reporter whose callback can hold a clone of the reporter
+    /// itself — the "cancel myself once progress crosses a threshold"
+    /// pattern used by callers that drive cancellation from observed
+    /// progress.
+    ///
+    /// ```no_run
+    /// use tpt_av_asset_utils::ProgressReporter;
+    ///
+    /// let reporter = ProgressReporter::with_self_callback(|token| {
+    ///     move |event| {
+    ///         if event.fraction >= 0.5 {
+    ///             token.cancel();
+    ///         }
+    ///     }
+    /// });
+    /// // pass `&reporter` to a generator; it aborts past 50%
+    /// ```
+    pub fn with_self_callback<F>(build: impl FnOnce(ProgressReporter) -> F) -> Self
+    where
+        F: Fn(ProgressEvent) + Send + Sync + 'static,
+    {
+        let reporter = Self::default();
+        let callback = build(reporter.clone());
+        let _ = reporter.inner.callback.set(Box::new(callback));
+        reporter
     }
 
     /// Reports progress as a `0.0..=1.0` fraction (values outside the range
@@ -144,7 +169,7 @@ impl ProgressReporter {
     }
 
     fn report_event(&self, event: ProgressEvent) {
-        if let Some(callback) = &self.inner.callback {
+        if let Some(callback) = self.inner.callback.get() {
             callback(event);
         }
     }
