@@ -13,15 +13,77 @@ use crate::job::{Job, JobId};
 /// appears in sane paths).
 const SEP: char = '\u{1}';
 
+impl WaveformJob {
+    /// Creates a waveform generation job.
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        job_id: JobId,
+        asset_id: AssetId,
+        audio_path: PathBuf,
+        chunk_size: u32,
+        sample_rate: u32,
+        storage: CacheStorage,
+        db: AssetDb,
+    ) -> Self {
+        Self { job_id, asset_id, audio_path, chunk_size, sample_rate, storage, db }
+    }
+}
+
+impl ThumbnailJob {
+    /// Creates a thumbnail extraction job.
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        job_id: JobId,
+        asset_id: AssetId,
+        video_path: PathBuf,
+        interval_secs: f64,
+        resolution: (u32, u32),
+        storage: CacheStorage,
+        db: AssetDb,
+    ) -> Self {
+        Self { job_id, asset_id, video_path, interval_secs, resolution, storage, db }
+    }
+}
+
+impl VideoProxyJob {
+    /// Creates a video proxy job.
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        job_id: JobId,
+        asset_id: AssetId,
+        video_path: PathBuf,
+        output: PathBuf,
+        profile: ProxyProfile,
+        db: AssetDb,
+    ) -> Self {
+        Self { job_id, asset_id, video_path, output, profile, db }
+    }
+}
+
+impl AudioProxyJob {
+    /// Creates an audio proxy job.
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        job_id: JobId,
+        asset_id: AssetId,
+        audio_path: PathBuf,
+        output: PathBuf,
+        profile: ProxyProfile,
+        db: AssetDb,
+    ) -> Self {
+        Self { job_id, asset_id, audio_path, output, profile, db }
+    }
+}
+
 /// Generates waveform peaks for an audio asset.
 pub struct WaveformJob {
-    pub(crate) job_id: JobId,
-    pub(crate) asset_id: AssetId,
-    pub(crate) audio_path: PathBuf,
-    pub(crate) chunk_size: u32,
-    pub(crate) sample_rate: u32,
-    pub(crate) storage: CacheStorage,
-    pub(crate) db: AssetDb,
+    job_id: JobId,
+    asset_id: AssetId,
+    audio_path: PathBuf,
+    chunk_size: u32,
+    sample_rate: u32,
+    storage: CacheStorage,
+    db: AssetDb,
 }
 
 impl Job for WaveformJob {
@@ -65,13 +127,13 @@ impl Job for WaveformJob {
 
 /// Extracts video thumbnails for a video asset.
 pub struct ThumbnailJob {
-    pub(crate) job_id: JobId,
-    pub(crate) asset_id: AssetId,
-    pub(crate) video_path: PathBuf,
-    pub(crate) interval_secs: f64,
-    pub(crate) resolution: (u32, u32),
-    pub(crate) storage: CacheStorage,
-    pub(crate) db: AssetDb,
+    job_id: JobId,
+    asset_id: AssetId,
+    video_path: PathBuf,
+    interval_secs: f64,
+    resolution: (u32, u32),
+    storage: CacheStorage,
+    db: AssetDb,
 }
 
 impl Job for ThumbnailJob {
@@ -122,12 +184,12 @@ impl Job for ThumbnailJob {
 
 /// Renders a video proxy.
 pub struct VideoProxyJob {
-    pub(crate) job_id: JobId,
-    pub(crate) asset_id: AssetId,
-    pub(crate) video_path: PathBuf,
-    pub(crate) output: PathBuf,
-    pub(crate) profile: ProxyProfile,
-    pub(crate) db: AssetDb,
+    job_id: JobId,
+    asset_id: AssetId,
+    video_path: PathBuf,
+    output: PathBuf,
+    profile: ProxyProfile,
+    db: AssetDb,
 }
 
 impl Job for VideoProxyJob {
@@ -170,12 +232,12 @@ impl Job for VideoProxyJob {
 
 /// Renders an audio proxy.
 pub struct AudioProxyJob {
-    pub(crate) job_id: JobId,
-    pub(crate) asset_id: AssetId,
-    pub(crate) audio_path: PathBuf,
-    pub(crate) output: PathBuf,
-    pub(crate) profile: ProxyProfile,
-    pub(crate) db: AssetDb,
+    job_id: JobId,
+    asset_id: AssetId,
+    audio_path: PathBuf,
+    output: PathBuf,
+    profile: ProxyProfile,
+    db: AssetDb,
 }
 
 impl Job for AudioProxyJob {
@@ -235,40 +297,40 @@ pub fn rebuild_job(
     }
 
     match record.kind.as_str() {
-        "waveform" => Some(Box::new(WaveformJob {
+        "waveform" => Some(Box::new(WaveformJob::new(
             job_id,
             asset_id,
-            audio_path: PathBuf::from(field!(0)),
-            chunk_size: field!(1).parse().ok()?,
-            sample_rate: field!(2).parse().ok()?,
-            storage: storage.clone(),
-            db: db.clone(),
-        })),
-        "thumbnails" => Some(Box::new(ThumbnailJob {
+            PathBuf::from(field!(0)),
+            field!(1).parse().ok()?,
+            field!(2).parse().ok()?,
+            storage.clone(),
+            db.clone(),
+        ))),
+        "thumbnails" => Some(Box::new(ThumbnailJob::new(
             job_id,
             asset_id,
-            video_path: PathBuf::from(field!(0)),
-            interval_secs: field!(1).parse().ok()?,
-            resolution: (field!(2).parse().ok()?, field!(3).parse().ok()?),
-            storage: storage.clone(),
-            db: db.clone(),
-        })),
-        "video_proxy" => Some(Box::new(VideoProxyJob {
+            PathBuf::from(field!(0)),
+            field!(1).parse().ok()?,
+            (field!(2).parse().ok()?, field!(3).parse().ok()?),
+            storage.clone(),
+            db.clone(),
+        ))),
+        "video_proxy" => Some(Box::new(VideoProxyJob::new(
             job_id,
             asset_id,
-            video_path: PathBuf::from(field!(0)),
-            output: PathBuf::from(field!(1)),
-            profile: ProxyProfile::proxy_1080p_low(),
-            db: db.clone(),
-        })),
-        "audio_proxy" => Some(Box::new(AudioProxyJob {
+            PathBuf::from(field!(0)),
+            PathBuf::from(field!(1)),
+            ProxyProfile::proxy_1080p_low(),
+            db.clone(),
+        ))),
+        "audio_proxy" => Some(Box::new(AudioProxyJob::new(
             job_id,
             asset_id,
-            audio_path: PathBuf::from(field!(0)),
-            output: PathBuf::from(field!(1)),
-            profile: ProxyProfile::audio_proxy_flac(),
-            db: db.clone(),
-        })),
+            PathBuf::from(field!(0)),
+            PathBuf::from(field!(1)),
+            ProxyProfile::audio_proxy_flac(),
+            db.clone(),
+        ))),
         _ => None,
     }
 }

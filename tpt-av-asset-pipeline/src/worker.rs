@@ -102,10 +102,9 @@ fn run_job(shared: &Arc<Shared>, mut job: Box<dyn Job>) {
             _ => scheduler.mark_dead(id),
         }
     }
-    shared.persist(id, state, error);
-    shared.queue_signal.notify_all();
-
     if let Some(message) = &error {
         log::debug!("pipeline: job {} finished with: {message}", id.0);
     }
+    shared.persist(id, state, error);
+    shared.queue_signal.notify_all();
 }

@@ -100,46 +100,42 @@ impl AssetImporter {
         let mut jobs: Vec<Box<dyn crate::job::Job>> = Vec::new();
         match info.media_type {
             MediaType::Audio => {
-                jobs.push(Box::new(WaveformJob {
-                    job_id: self.pipeline.next_job_id(),
-                    asset_id: info.id,
-                    audio_path: info.path.clone(),
-                    chunk_size: self.chunk_size,
-                    sample_rate: info
-                        .audio
-                        .as_ref()
-                        .map(|a| a.sample_rate)
-                        .unwrap_or(48_000),
-                    storage: self.storage.clone(),
-                    db: self.db.clone(),
-                }));
-                jobs.push(Box::new(AudioProxyJob {
-                    job_id: self.pipeline.next_job_id(),
-                    asset_id: info.id,
-                    audio_path: info.path.clone(),
-                    output: self.storage.proxy_path(info.id, "flac"),
-                    profile: tpt_av_asset_proxy::ProxyProfile::audio_proxy_flac(),
-                    db: self.db.clone(),
-                }));
+                jobs.push(Box::new(WaveformJob::new(
+                    self.pipeline.next_job_id(),
+                    info.id,
+                    info.path.clone(),
+                    self.chunk_size,
+                    info.audio.as_ref().map(|a| a.sample_rate).unwrap_or(48_000),
+                    self.storage.clone(),
+                    self.db.clone(),
+                )));
+                jobs.push(Box::new(AudioProxyJob::new(
+                    self.pipeline.next_job_id(),
+                    info.id,
+                    info.path.clone(),
+                    self.storage.proxy_path(info.id, "flac"),
+                    tpt_av_asset_proxy::ProxyProfile::audio_proxy_flac(),
+                    self.db.clone(),
+                )));
             }
             MediaType::Video => {
-                jobs.push(Box::new(ThumbnailJob {
-                    job_id: self.pipeline.next_job_id(),
-                    asset_id: info.id,
-                    video_path: info.path.clone(),
-                    interval_secs: self.thumbnail_interval,
-                    resolution: self.thumbnail_resolution,
-                    storage: self.storage.clone(),
-                    db: self.db.clone(),
-                }));
-                jobs.push(Box::new(VideoProxyJob {
-                    job_id: self.pipeline.next_job_id(),
-                    asset_id: info.id,
-                    video_path: info.path.clone(),
-                    output: self.storage.proxy_path(info.id, "mp4"),
-                    profile: tpt_av_asset_proxy::ProxyProfile::proxy_1080p_low(),
-                    db: self.db.clone(),
-                }));
+                jobs.push(Box::new(ThumbnailJob::new(
+                    self.pipeline.next_job_id(),
+                    info.id,
+                    info.path.clone(),
+                    self.thumbnail_interval,
+                    self.thumbnail_resolution,
+                    self.storage.clone(),
+                    self.db.clone(),
+                )));
+                jobs.push(Box::new(VideoProxyJob::new(
+                    self.pipeline.next_job_id(),
+                    info.id,
+                    info.path.clone(),
+                    self.storage.proxy_path(info.id, "mp4"),
+                    tpt_av_asset_proxy::ProxyProfile::proxy_1080p_low(),
+                    self.db.clone(),
+                )));
             }
             MediaType::Image => {
                 // No background processing for stills today.

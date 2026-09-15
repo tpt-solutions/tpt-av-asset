@@ -90,7 +90,7 @@ pub(crate) type QueueIndex = HashMap<JobId, usize>;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tpt_av_asset_utils::{AssetId, ProgressReporter};
+    use tpt_av_asset_utils::{AssetError, AssetId, ProgressReporter};
 
     struct Dummy {
         id: JobId,

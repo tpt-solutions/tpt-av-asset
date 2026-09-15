@@ -340,7 +340,4 @@ impl ProcessingPipeline {
         Ok(recovered)
     }
 
-    pub(crate) fn shared(&self) -> &Arc<Shared> {
-        &self.shared
-    }
 }
