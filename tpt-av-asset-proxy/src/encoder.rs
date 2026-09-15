@@ -50,14 +50,14 @@ impl VideoEncoderSink {
     /// # Errors
     /// Returns [`AssetError::Codec`] for malformed frames or encoder
     /// failures.
-    pub fn write_resized(
-        &mut self,
-        frame: &tpt_kinetix::Frame,
-    ) -> Result<(), AssetError> {
+    pub fn write_resized(&mut self, frame: &tpt_kinetix::Frame) -> Result<(), AssetError> {
         let img = image::RgbaImage::from_raw(frame.width, frame.height, frame.data.clone())
             .ok_or_else(|| AssetError::codec("decoder returned malformed frame"))?;
-        let resized = image::DynamicImage::ImageRgba8(img)
-            .resize_exact(self.target.0, self.target.1, image::imageops::FilterType::Triangle);
+        let resized = image::DynamicImage::ImageRgba8(img).resize_exact(
+            self.target.0,
+            self.target.1,
+            image::imageops::FilterType::Triangle,
+        );
         let encoded = tpt_kinetix::Frame {
             index: frame.index,
             time_secs: frame.time_secs,

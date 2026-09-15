@@ -110,7 +110,9 @@ impl AssetDb {
         let row = row.finish();
 
         transaction::with_write_txn(&self.db, |txn| {
-            let mut table = txn.open_table(crate::schema::JOBS).map_err(transaction::db_err)?;
+            let mut table = txn
+                .open_table(crate::schema::JOBS)
+                .map_err(transaction::db_err)?;
             table
                 .insert(record.job_id, row.as_slice())
                 .map_err(transaction::db_err)?;
@@ -124,7 +126,9 @@ impl AssetDb {
     /// Returns [`AssetError::Db`] on storage failure.
     pub fn get_job(&self, job_id: u64) -> Result<Option<JobRecord>, AssetError> {
         let txn = self.db.begin_read().map_err(transaction::db_err)?;
-        let table = txn.open_table(crate::schema::JOBS).map_err(transaction::db_err)?;
+        let table = txn
+            .open_table(crate::schema::JOBS)
+            .map_err(transaction::db_err)?;
         match table.get(job_id).map_err(transaction::db_err)? {
             Some(row) => Ok(Some(decode_job_record(job_id, row.value())?)),
             None => Ok(None),
@@ -137,7 +141,9 @@ impl AssetDb {
     /// Returns [`AssetError::Db`] on storage failure.
     pub fn delete_job(&self, job_id: u64) -> Result<bool, AssetError> {
         transaction::with_write_txn(&self.db, |txn| {
-            let mut table = txn.open_table(crate::schema::JOBS).map_err(transaction::db_err)?;
+            let mut table = txn
+                .open_table(crate::schema::JOBS)
+                .map_err(transaction::db_err)?;
             let removed = table.remove(job_id).map_err(transaction::db_err)?;
             Ok(removed.is_some())
         })
@@ -149,7 +155,9 @@ impl AssetDb {
     /// Returns [`AssetError::Db`] on storage failure.
     pub fn all_jobs(&self) -> Result<Vec<JobRecord>, AssetError> {
         let txn = self.db.begin_read().map_err(transaction::db_err)?;
-        let table = txn.open_table(crate::schema::JOBS).map_err(transaction::db_err)?;
+        let table = txn
+            .open_table(crate::schema::JOBS)
+            .map_err(transaction::db_err)?;
         let mut jobs = Vec::new();
         for row in table.iter().map_err(transaction::db_err)? {
             let (key, value) = row.map_err(transaction::db_err)?;
@@ -194,8 +202,8 @@ fn decode_opt_str(d: &mut Dec<'_>) -> Result<Option<String>, AssetError> {
 pub fn decode_job_record(job_id: u64, data: &[u8]) -> Result<JobRecord, AssetError> {
     let mut d = Dec::new(data);
     let asset_id = AssetId::from_key_bytes(d.bytes()?)?;
-    let priority = Priority::from_u8(d.u8()?)
-        .ok_or_else(|| AssetError::db("corrupt row: bad priority"))?;
+    let priority =
+        Priority::from_u8(d.u8()?).ok_or_else(|| AssetError::db("corrupt row: bad priority"))?;
     let state =
         JobState::from_u8(d.u8()?).ok_or_else(|| AssetError::db("corrupt row: bad job state"))?;
     let kind = d.str()?;

@@ -1,6 +1,6 @@
 //! Job trait and types.
 
-use tpt_av_asset_utils::{AssetError, AssetId, Priority};
+use tpt_av_asset_utils::{AssetError, AssetId, Priority, ProgressReporter};
 
 /// Unique job identifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -35,5 +35,8 @@ pub trait Job: Send {
     /// # Errors
     /// Returns [`AssetError::Cancelled`] when cancelled through the
     /// progress reporter, or any other [`AssetError`] on failure.
-    fn execute(&mut self, progress: &tpt_av_asset_utils::ProgressReporter) -> Result<(), AssetError>;
+    fn execute(
+        &mut self,
+        progress: &ProgressReporter,
+    ) -> Result<(), AssetError>;
 }

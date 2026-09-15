@@ -86,7 +86,11 @@ fn run_job(shared: &Arc<Shared>, mut job: Box<dyn Job>) {
     // A panicking job must fail instead of taking the worker down.
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| job.execute(&reporter)));
 
-    shared.running.lock().expect("running poisoned").remove(&id.0);
+    shared
+        .running
+        .lock()
+        .expect("running poisoned")
+        .remove(&id.0);
 
     let (state, error) = match result {
         Ok(Ok(())) => (JobState::Completed, None),

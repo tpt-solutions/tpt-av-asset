@@ -2,7 +2,7 @@
 //! + on-disk cache removal.
 //!
 //! When a watched file is modified, moved, or deleted, any asset registered
-//! at that path has stale caches (its [`AssetId`] embeds mtime and size).
+//! at that path has stale caches (its `AssetId` embeds mtime and size).
 //! [`CacheInvalidator::handle_event`] finds the asset via the database path
 //! index and drops its caches, so the next import regenerates everything.
 

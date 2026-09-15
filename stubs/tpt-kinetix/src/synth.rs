@@ -9,7 +9,7 @@ use crate::{Frame, Result, TkvEncoder, VideoEncoder};
 /// time (use [`gradient_painter`] for a moving gradient).
 ///
 /// # Errors
-/// Returns [`Error`] if the file cannot be created or written.
+/// Returns [`Error`](crate::Error) if the file cannot be created or written.
 pub fn write_test_video<P>(
     path: P,
     width: u32,

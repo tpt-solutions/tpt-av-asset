@@ -30,7 +30,7 @@ pub use cache_table::CacheType;
 pub use job_table::{JobRecord, JobState};
 pub use schema::{asset_key, cache_key};
 
-use tpt_av_asset_utils::AssetError;
+use tpt_av_asset_utils::{AssetError, AssetId, MediaInfo};
 
 /// The embedded media database.
 ///
@@ -62,14 +62,13 @@ impl AssetDb {
         let db = redb::Database::create(path).map_err(transaction::db_err)?;
         {
             let txn = db.begin_write().map_err(transaction::db_err)?;
-            txn.open_table(schema::ASSETS).map_err(transaction::db_err)?;
+            txn.open_table(schema::ASSETS)
+                .map_err(transaction::db_err)?;
             txn.open_table(schema::CACHE_ENTRIES)
                 .map_err(transaction::db_err)?;
             txn.open_table(schema::JOBS).map_err(transaction::db_err)?;
             txn.commit().map_err(transaction::db_err)?;
         }
-        Ok(Self {
-            db: Arc::new(db),
-        })
+        Ok(Self { db: Arc::new(db) })
     }
 }

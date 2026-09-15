@@ -1,4 +1,4 @@
-//! Placeholder stand-in for the real [`tpt-kinetix`] media container/video
+//! Placeholder stand-in for the real `tpt-kinetix` media container/video
 //! codec crate.
 //!
 //! The real `tpt-kinetix` / `tpt-cadence` git dependencies do not exist yet
@@ -135,6 +135,13 @@ pub trait VideoEncoder: Send {
 ///
 /// # Errors
 /// Returns [`Error`] if the file cannot be created.
-pub fn open_encoder(path: &Path, width: u32, height: u32, frame_rate: f64) -> Result<Box<dyn VideoEncoder>> {
-    Ok(Box::new(tkv::TkvEncoder::new(path, width, height, frame_rate)?))
+pub fn open_encoder(
+    path: &Path,
+    width: u32,
+    height: u32,
+    frame_rate: f64,
+) -> Result<Box<dyn VideoEncoder>> {
+    Ok(Box::new(tkv::TkvEncoder::new(
+        path, width, height, frame_rate,
+    )?))
 }

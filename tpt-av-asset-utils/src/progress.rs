@@ -223,7 +223,10 @@ mod tests {
 
         clone.cancel();
         assert!(reporter.is_cancelled());
-        assert!(matches!(clone.check_cancelled(), Err(AssetError::Cancelled)));
+        assert!(matches!(
+            clone.check_cancelled(),
+            Err(AssetError::Cancelled)
+        ));
     }
 
     #[test]

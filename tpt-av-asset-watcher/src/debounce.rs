@@ -75,7 +75,7 @@ impl EventDebouncer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::event::{FileEventType, FileEvent};
+    use crate::event::{FileEvent, FileEventType};
     use std::time::SystemTime;
 
     fn event(path: &str, kind: FileEventType) -> FileEvent {
@@ -92,7 +92,10 @@ mod tests {
         let t0 = Instant::now();
 
         d.push(event("/m/a.wav", FileEventType::Created), t0);
-        d.push(event("/m/a.wav", FileEventType::Modified), t0 + Duration::from_millis(10));
+        d.push(
+            event("/m/a.wav", FileEventType::Modified),
+            t0 + Duration::from_millis(10),
+        );
         d.push(event("/m/b.wav", FileEventType::Created), t0);
 
         // Window not elapsed: nothing ready.
@@ -107,7 +110,11 @@ mod tests {
 
         let a = d.pop_ready(t0 + Duration::from_millis(150)).unwrap();
         assert_eq!(a.path, PathBuf::from("/m/a.wav"));
-        assert_eq!(a.event_type, FileEventType::Modified, "coalesced to the last event");
+        assert_eq!(
+            a.event_type,
+            FileEventType::Modified,
+            "coalesced to the last event"
+        );
         assert!(d.is_empty());
         assert!(d.pop_ready(t0 + Duration::from_secs(1)).is_none());
     }
@@ -133,11 +140,20 @@ mod tests {
         let mut d = EventDebouncer::new(Duration::from_secs(10));
         let t0 = Instant::now();
         d.push(event("/m/a.wav", FileEventType::Created), t0);
-        d.push(event("/m/c.wav", FileEventType::Created), t0 + Duration::from_millis(5));
-        d.push(event("/m/b.wav", FileEventType::Created), t0 + Duration::from_millis(1));
+        d.push(
+            event("/m/c.wav", FileEventType::Created),
+            t0 + Duration::from_millis(5),
+        );
+        d.push(
+            event("/m/b.wav", FileEventType::Created),
+            t0 + Duration::from_millis(1),
+        );
         let events = d.flush();
         assert_eq!(
-            events.iter().map(|e| e.path.file_name().unwrap().to_string_lossy().into_owned()).collect::<Vec<_>>(),
+            events
+                .iter()
+                .map(|e| e.path.file_name().unwrap().to_string_lossy().into_owned())
+                .collect::<Vec<_>>(),
             vec!["a.wav", "b.wav", "c.wav"],
             "flush order follows quiet-time order"
         );

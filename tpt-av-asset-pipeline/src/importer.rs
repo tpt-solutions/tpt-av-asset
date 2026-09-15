@@ -86,7 +86,10 @@ impl AssetImporter {
     ///
     /// # Errors
     /// Same as [`AssetImporter::import`].
-    pub fn import_with_jobs(&self, path: &Path) -> Result<(AssetId, Vec<crate::job::JobId>), AssetError> {
+    pub fn import_with_jobs(
+        &self,
+        path: &Path,
+    ) -> Result<(AssetId, Vec<crate::job::JobId>), AssetError> {
         if std::fs::metadata(path).is_err() {
             return Err(AssetError::NotFound(path.to_path_buf()));
         }

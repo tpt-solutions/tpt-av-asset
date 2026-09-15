@@ -1,4 +1,4 @@
-//! Placeholder stand-in for the real [`tpt-cadence`] audio codec crate.
+//! Placeholder stand-in for the real `tpt-cadence` audio codec crate.
 //!
 //! The real `tpt-kinetix` / `tpt-cadence` git dependencies do not exist yet
 //! (see `todo.md`, Phase 7). This crate provides the trait shapes the real

@@ -36,7 +36,7 @@ impl CacheStorage {
     /// Creates the `waveforms`, `thumbnails`, and `proxies` directories.
     ///
     /// # Errors
-    /// Returns [`AssetError::Io`] if the directories cannot be created.
+    /// Returns [`AssetError::Io`](tpt_av_asset_utils::AssetError::Io) if the directories cannot be created.
     pub fn ensure_layout(&self) -> Result<(), tpt_av_asset_utils::AssetError> {
         for dir in [self.waveform_dir(), self.thumbnail_root(), self.proxy_dir()] {
             std::fs::create_dir_all(dir)?;
@@ -64,7 +64,8 @@ impl CacheStorage {
     /// Path of the waveform peak file for an asset:
     /// `waveforms/{asset_hash}.peaks`.
     pub fn waveform_path(&self, asset_id: AssetId) -> PathBuf {
-        self.waveform_dir().join(format!("{}.peaks", Self::asset_hash(asset_id)))
+        self.waveform_dir()
+            .join(format!("{}.peaks", Self::asset_hash(asset_id)))
     }
 
     /// Directory holding an asset's thumbnails:
@@ -75,10 +76,8 @@ impl CacheStorage {
 
     /// Path of a proxy output: `proxies/{asset_hash}_proxy.{mp4|flac}`.
     pub fn proxy_path(&self, asset_id: AssetId, extension: &str) -> PathBuf {
-        self.proxy_dir().join(format!(
-            "{}_proxy.{extension}",
-            Self::asset_hash(asset_id)
-        ))
+        self.proxy_dir()
+            .join(format!("{}_proxy.{extension}", Self::asset_hash(asset_id)))
     }
 
     /// Deletes every cache file for an asset (waveform file, thumbnail
@@ -86,8 +85,11 @@ impl CacheStorage {
     /// database. Returns how many paths were removed.
     ///
     /// # Errors
-    /// Returns [`AssetError::Io`] if removal fails.
-    pub fn remove_asset_files(&self, asset_id: AssetId) -> Result<usize, tpt_av_asset_utils::AssetError> {
+    /// Returns [`AssetError::Io`](tpt_av_asset_utils::AssetError::Io) if removal fails.
+    pub fn remove_asset_files(
+        &self,
+        asset_id: AssetId,
+    ) -> Result<usize, tpt_av_asset_utils::AssetError> {
         let mut removed = 0;
         let waveform = self.waveform_path(asset_id);
         if waveform.exists() {
@@ -99,7 +101,10 @@ impl CacheStorage {
             std::fs::remove_dir_all(&thumbs)?;
             removed += 1;
         }
-        for proxy in [self.proxy_path(asset_id, "mp4"), self.proxy_path(asset_id, "flac")] {
+        for proxy in [
+            self.proxy_path(asset_id, "mp4"),
+            self.proxy_path(asset_id, "flac"),
+        ] {
             if proxy.exists() {
                 std::fs::remove_file(&proxy)?;
                 removed += 1;
@@ -119,9 +124,18 @@ mod tests {
         let a = AssetId::from_parts(1, 2, 3);
         let hash = CacheStorage::asset_hash(a);
 
-        assert_eq!(storage.waveform_path(a), PathBuf::from(format!("/tmp/cache/waveforms/{hash}.peaks")));
-        assert_eq!(storage.thumbnail_dir(a), PathBuf::from(format!("/tmp/cache/thumbnails/{hash}")));
-        assert_eq!(storage.proxy_path(a, "mp4"), PathBuf::from(format!("/tmp/cache/proxies/{hash}_proxy.mp4")));
+        assert_eq!(
+            storage.waveform_path(a),
+            PathBuf::from(format!("/tmp/cache/waveforms/{hash}.peaks"))
+        );
+        assert_eq!(
+            storage.thumbnail_dir(a),
+            PathBuf::from(format!("/tmp/cache/thumbnails/{hash}"))
+        );
+        assert_eq!(
+            storage.proxy_path(a, "mp4"),
+            PathBuf::from(format!("/tmp/cache/proxies/{hash}_proxy.mp4"))
+        );
     }
 
     #[test]

@@ -2,16 +2,16 @@
 //!
 //! | Module | Platform | Mechanism |
 //! | :--- | :--- | :--- |
-//! | [`read_dir`] | Windows (default), any platform | Periodic directory diff (polling). |
-//! | [`inotify`]  | Linux | `notify` crate (inotify under the hood). |
-//! | [`fsevents`] | macOS | `notify` crate (FSEvents under the hood). |
+//! | `read_dir` | Windows (default), any platform | Periodic directory diff (polling). |
+//! | `inotify`  | Linux | `notify` crate (inotify under the hood). |
+//! | `fsevents` | macOS | `notify` crate (FSEvents under the hood). |
 
 pub mod read_dir;
 
-#[cfg(target_os = "linux")]
-pub mod inotify;
 #[cfg(target_os = "macos")]
 pub mod fsevents;
+#[cfg(target_os = "linux")]
+pub mod inotify;
 
 use std::path::Path;
 use std::sync::mpsc::Sender;
@@ -65,10 +65,7 @@ pub fn default_backend(
 /// Maps a `notify` event into raw [`FileEvent`]s (shared by the inotify and
 /// FSEvents wrappers).
 #[cfg(any(target_os = "linux", target_os = "macos"))]
-pub(crate) fn map_notify_event(
-    event: notify::Event,
-    sender: &Sender<FileEvent>,
-) {
+pub(crate) fn map_notify_event(event: notify::Event, sender: &Sender<FileEvent>) {
     use notify::event::{ModifyKind, RenameMode};
 
     let timestamp = std::time::SystemTime::now();
@@ -76,17 +73,31 @@ pub(crate) fn map_notify_event(
         notify::EventKind::Create(_) => event
             .paths
             .first()
-            .map(|p| vec![FileEvent { event_type: crate::event::FileEventType::Created, path: p.clone(), timestamp }])
+            .map(|p| {
+                vec![FileEvent {
+                    event_type: crate::event::FileEventType::Created,
+                    path: p.clone(),
+                    timestamp,
+                }]
+            })
             .unwrap_or_default(),
         notify::EventKind::Remove(_) => event
             .paths
             .first()
-            .map(|p| vec![FileEvent { event_type: crate::event::FileEventType::Deleted, path: p.clone(), timestamp }])
+            .map(|p| {
+                vec![FileEvent {
+                    event_type: crate::event::FileEventType::Deleted,
+                    path: p.clone(),
+                    timestamp,
+                }]
+            })
             .unwrap_or_default(),
         notify::EventKind::Modify(ModifyKind::Name(RenameMode::Both)) => {
             if event.paths.len() >= 2 {
                 vec![FileEvent {
-                    event_type: crate::event::FileEventType::Renamed { old_path: event.paths[0].clone() },
+                    event_type: crate::event::FileEventType::Renamed {
+                        old_path: event.paths[0].clone(),
+                    },
                     path: event.paths[1].clone(),
                     timestamp,
                 }]
@@ -97,17 +108,35 @@ pub(crate) fn map_notify_event(
         notify::EventKind::Modify(ModifyKind::Name(RenameMode::From)) => event
             .paths
             .first()
-            .map(|p| vec![FileEvent { event_type: crate::event::FileEventType::Deleted, path: p.clone(), timestamp }])
+            .map(|p| {
+                vec![FileEvent {
+                    event_type: crate::event::FileEventType::Deleted,
+                    path: p.clone(),
+                    timestamp,
+                }]
+            })
             .unwrap_or_default(),
         notify::EventKind::Modify(ModifyKind::Name(RenameMode::To)) => event
             .paths
             .first()
-            .map(|p| vec![FileEvent { event_type: crate::event::FileEventType::Created, path: p.clone(), timestamp }])
+            .map(|p| {
+                vec![FileEvent {
+                    event_type: crate::event::FileEventType::Created,
+                    path: p.clone(),
+                    timestamp,
+                }]
+            })
             .unwrap_or_default(),
         notify::EventKind::Modify(_) => event
             .paths
             .first()
-            .map(|p| vec![FileEvent { event_type: crate::event::FileEventType::Modified, path: p.clone(), timestamp }])
+            .map(|p| {
+                vec![FileEvent {
+                    event_type: crate::event::FileEventType::Modified,
+                    path: p.clone(),
+                    timestamp,
+                }]
+            })
             .unwrap_or_default(),
         // Access events and anything else are irrelevant to caching.
         _ => Vec::new(),

@@ -57,7 +57,9 @@ pub fn generate(
         progress.report_ratio(done, total);
     }
 
-    encoder.finish().map_err(|e| AssetError::codec(e.to_string()))?;
+    encoder
+        .finish()
+        .map_err(|e| AssetError::codec(e.to_string()))?;
     progress.report(1.0);
     Ok(())
 }

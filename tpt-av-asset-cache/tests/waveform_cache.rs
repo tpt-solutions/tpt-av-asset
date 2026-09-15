@@ -7,7 +7,6 @@ use std::sync::{Arc, Mutex};
 
 use tpt_av_asset_cache::{CacheStorage, WaveformCache, WaveformGenerator};
 use tpt_av_asset_utils::{AssetError, AssetId, ProgressReporter};
-use tpt_cadence;
 
 fn temp_dir(name: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!(
@@ -23,7 +22,13 @@ fn temp_dir(name: &str) -> PathBuf {
     dir
 }
 
-fn synthetic_wav(dir: &std::path::Path, name: &str, duration: f64, rate: u32, channels: u16) -> PathBuf {
+fn synthetic_wav(
+    dir: &std::path::Path,
+    name: &str,
+    duration: f64,
+    rate: u32,
+    channels: u16,
+) -> PathBuf {
     let path = dir.join(name);
     tpt_cadence::write_test_wav(&path, duration, rate, channels).unwrap();
     path
@@ -47,7 +52,10 @@ fn generate_and_read_back_stereo() {
         *guard = guard.max(e.fraction);
     });
     generator.generate(&wav, &mut cache, &progress).unwrap();
-    assert!(*max_fraction.lock().unwrap() >= 0.99, "progress must reach the end");
+    assert!(
+        *max_fraction.lock().unwrap() >= 0.99,
+        "progress must reach the end"
+    );
 
     // 2 s at 16 kHz with 1024-frame chunks → ceil(32000/1024) = 32 chunks.
     assert_eq!(cache.chunk_count(), 32);
@@ -95,7 +103,11 @@ fn cancellation_aborts_with_error_and_partial_cache() {
     progress.cancel();
     let err = WaveformGenerator::new(256, 8_000).generate(&wav, &mut cache, &progress);
     assert!(matches!(err, Err(AssetError::Cancelled)));
-    assert_eq!(cache.chunk_count(), 0, "cancel before first chunk must not write");
+    assert_eq!(
+        cache.chunk_count(),
+        0,
+        "cancel before first chunk must not write"
+    );
 
     // Cancel mid-generation once observed progress crosses 5%.
     let mut cache = WaveformCache::open(asset, &storage).unwrap();
@@ -110,7 +122,10 @@ fn cancellation_aborts_with_error_and_partial_cache() {
     assert!(matches!(err, Err(AssetError::Cancelled)));
     let partial = cache.chunk_count();
     let total = 4 * 8_000 / 256;
-    assert!(partial > 0 && partial < total, "partial progress: {partial}/{total}");
+    assert!(
+        partial > 0 && partial < total,
+        "partial progress: {partial}/{total}"
+    );
 
     let _ = std::fs::remove_dir_all(&dir);
 }
@@ -123,7 +138,8 @@ fn resume_completes_without_regressing() {
     let asset = AssetId::from_path(&wav).unwrap();
     let generator = WaveformGenerator::new(256, 8_000);
     // 24000 frames / 256 per chunk = 93.75 → 94 chunks (last one partial).
-    let total = (3 * 8_000 + 255) / 256;
+    let total = 3usize * 8_000;
+    let total = total.div_ceil(256);
 
     // First pass: cancel early, leaving partial progress on disk.
     let mut cache = WaveformCache::open(asset, &storage).unwrap();
@@ -145,7 +161,11 @@ fn resume_completes_without_regressing() {
     // Second pass: a fresh process would re-open the same file; chunk_count
     // must never regress and the run must complete.
     let mut cache = WaveformCache::open(asset, &storage).unwrap();
-    assert_eq!(cache.chunk_count(), partial, "reopen must see persisted progress");
+    assert_eq!(
+        cache.chunk_count(),
+        partial,
+        "reopen must see persisted progress"
+    );
 
     let min_seen = Arc::new(Mutex::new(f64::MAX));
     let tracker = Arc::clone(&min_seen);
@@ -181,7 +201,8 @@ fn params_must_match_existing_cache() {
         .unwrap();
 
     // Different chunk size on the same cache file is rejected.
-    let err = WaveformGenerator::new(1024, 8_000).generate(&wav, &mut cache, &ProgressReporter::new());
+    let err =
+        WaveformGenerator::new(1024, 8_000).generate(&wav, &mut cache, &ProgressReporter::new());
     assert!(matches!(err, Err(AssetError::Validation(_))));
 
     let _ = std::fs::remove_dir_all(&dir);
@@ -211,7 +232,11 @@ fn writes_counter_grows_monotonically() {
     WaveformGenerator::new(512, 8_000)
         .generate(&wav, &mut cache, &progress)
         .unwrap();
-    assert_eq!(monotonic.load(Ordering::SeqCst), 0, "progress must be monotonic");
+    assert_eq!(
+        monotonic.load(Ordering::SeqCst),
+        0,
+        "progress must be monotonic"
+    );
 
     let _ = std::fs::remove_dir_all(&dir);
 }

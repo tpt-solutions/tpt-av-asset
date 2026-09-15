@@ -65,7 +65,10 @@ fn generate_and_read_back_thumbnails() {
 
     // Nearest read.
     let near = cache.read_nearest(0.44).unwrap().unwrap();
-    assert!((near.time_secs - 0.5).abs() < 1e-9, "0.44 rounds to the 0.5 slot");
+    assert!(
+        (near.time_secs - 0.5).abs() < 1e-9,
+        "0.44 rounds to the 0.5 slot"
+    );
     let near_start = cache.read_nearest(0.1).unwrap().unwrap();
     assert!((near_start.time_secs).abs() < 1e-9, "0.1 is nearest to t=0");
 
@@ -140,7 +143,10 @@ fn thumbnail_cancellation_leaves_partial_cache() {
     });
     let err = ThumbnailGenerator::new(0.1, (16, 12)).generate(&video, &mut cache, &progress);
     assert!(matches!(err, Err(AssetError::Cancelled)));
-    assert!(cache.thumbnail_count() < 10, "some thumbnails must be cached");
+    assert!(
+        cache.thumbnail_count() < 10,
+        "some thumbnails must be cached"
+    );
     assert!(cache.thumbnail_count() > 0, "but not zero");
 
     let _ = std::fs::remove_dir_all(&dir);

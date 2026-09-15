@@ -72,14 +72,18 @@ fn asset_lookup_by_path() {
 
     let db = AssetDb::open(&dir.join("db.redb")).unwrap();
     let id = AssetId::from_path(&file).unwrap();
-    db.upsert_asset(&MediaInfo::new(id, &file, MediaType::Audio)).unwrap();
+    db.upsert_asset(&MediaInfo::new(id, &file, MediaType::Audio))
+        .unwrap();
 
     // Same file via a relative-ish path variant.
     let found = db.get_asset_by_path(&media_dir.join("song.wav")).unwrap();
     assert!(found.is_some(), "canonical path comparison must find it");
     assert_eq!(found.unwrap().id, id);
 
-    assert!(db.get_asset_by_path(&media_dir.join("other.wav")).unwrap().is_none());
+    assert!(db
+        .get_asset_by_path(&media_dir.join("other.wav"))
+        .unwrap()
+        .is_none());
     let _ = std::fs::remove_dir_all(&dir);
 }
 
@@ -166,7 +170,8 @@ fn data_survives_reopen() {
 
     {
         let db = AssetDb::open(&db_path).unwrap();
-        db.upsert_asset(&sample_asset(a, "c.mp3", MediaType::Audio)).unwrap();
+        db.upsert_asset(&sample_asset(a, "c.mp3", MediaType::Audio))
+            .unwrap();
         db.record_cache_entry(a, CacheType::AudioProxy, Path::new("/cache/c.flac"))
             .unwrap();
     }

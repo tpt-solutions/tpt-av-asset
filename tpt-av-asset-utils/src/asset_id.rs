@@ -85,12 +85,9 @@ impl AssetId {
     /// is what makes cache invalidation automatic.
     pub fn hash(&self) -> u64 {
         let mut h = self.path_hash;
-        h = h
-            .wrapping_mul(0x9E37_79B9_7F4A_7C15)
+        h = h.wrapping_mul(0x9E37_79B9_7F4A_7C15)
             ^ self.mtime_ms.wrapping_mul(0xFF51_AFD7_ED55_8CCD);
-        h = h
-            .wrapping_mul(0x9E37_79B9_7F4A_7C15)
-            ^ self.size.wrapping_mul(0xC4CE_B9FE_1A85_EC53);
+        h = h.wrapping_mul(0x9E37_79B9_7F4A_7C15) ^ self.size.wrapping_mul(0xC4CE_B9FE_1A85_EC53);
         h ^= h >> 33;
         h = h.wrapping_mul(0xFF51_AFD7_ED55_8CCD);
         h ^= h >> 33;
@@ -151,7 +148,8 @@ mod tests {
     use std::path::PathBuf;
 
     fn temp_dir(name: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("tpt-av-asset-utils-{name}-{}", std::process::id()));
+        let dir =
+            std::env::temp_dir().join(format!("tpt-av-asset-utils-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         dir
@@ -165,7 +163,13 @@ mod tests {
 
         let a = AssetId::from_path(&path).unwrap();
         let b = AssetId::from_path(&path).unwrap();
-        let relative = AssetId::from_path(path.strip_prefix(&dir).map(|p| dir.join(p)).unwrap().as_path()).unwrap();
+        let relative = AssetId::from_path(
+            path.strip_prefix(&dir)
+                .map(|p| dir.join(p))
+                .unwrap()
+                .as_path(),
+        )
+        .unwrap();
         assert_eq!(a, b);
         assert_eq!(a, relative, "absolute vs relative path must agree");
         let _ = std::fs::remove_dir_all(&dir);
@@ -179,7 +183,10 @@ mod tests {
         let original = AssetId::from_path(&path).unwrap();
 
         // Change size.
-        let mut file = std::fs::OpenOptions::new().append(true).open(&path).unwrap();
+        let mut file = std::fs::OpenOptions::new()
+            .append(true)
+            .open(&path)
+            .unwrap();
         file.write_all(b"-extended").unwrap();
         file.sync_all().unwrap();
         let resized = AssetId::from_path(&path).unwrap();
@@ -189,10 +196,8 @@ mod tests {
         std::fs::write(&path, b"payload").unwrap();
         let same_size = AssetId::from_path(&path).unwrap();
         let f = std::fs::OpenOptions::new().write(true).open(&path).unwrap();
-        f.set_modified(UNIX_EPOCH + std::time::Duration::from_millis(
-            same_size.mtime_ms() + 5_000,
-        ))
-        .unwrap();
+        f.set_modified(UNIX_EPOCH + std::time::Duration::from_millis(same_size.mtime_ms() + 5_000))
+            .unwrap();
         drop(f);
         let touched = AssetId::from_path(&path).unwrap();
         assert_ne!(same_size, touched, "mtime change must change the id");

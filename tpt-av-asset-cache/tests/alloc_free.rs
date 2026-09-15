@@ -7,7 +7,6 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use tpt_av_asset_cache::{CacheStorage, WaveformCache, WaveformChunk, WaveformGenerator};
 use tpt_av_asset_utils::{AssetId, ProgressReporter};
-use tpt_cadence;
 
 static ALLOC_COUNT: AtomicUsize = AtomicUsize::new(0);
 
@@ -72,7 +71,12 @@ fn read_chunk_and_read_range_into_allocate_nothing() {
 
     // Warm-up: first touches may lazily initialize platform state (allowed).
     reader.read_chunk(0).unwrap().unwrap();
-    let mut scratch = [WaveformChunk { index: 0, min: 0.0, max: 0.0, rms: 0.0 }; 8];
+    let mut scratch = [WaveformChunk {
+        index: 0,
+        min: 0.0,
+        max: 0.0,
+        rms: 0.0,
+    }; 8];
     reader.read_range_into(0, &mut scratch).unwrap();
 
     // Measure: zero allocations from here on.

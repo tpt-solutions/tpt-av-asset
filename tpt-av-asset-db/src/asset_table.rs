@@ -15,7 +15,9 @@ impl AssetDb {
         let key = asset_key(&info.id);
         let row = encode_media_info(info);
         transaction::with_write_txn(&self.db, |txn| {
-            let mut table = txn.open_table(crate::schema::ASSETS).map_err(transaction::db_err)?;
+            let mut table = txn
+                .open_table(crate::schema::ASSETS)
+                .map_err(transaction::db_err)?;
             table
                 .insert(key.as_slice(), row.as_slice())
                 .map_err(transaction::db_err)?;
@@ -30,7 +32,9 @@ impl AssetDb {
     pub fn get_asset(&self, id: AssetId) -> Result<Option<MediaInfo>, AssetError> {
         let key = asset_key(&id);
         transaction::with_read_txn(&self.db, |txn| {
-            let table = txn.open_table(crate::schema::ASSETS).map_err(transaction::db_err)?;
+            let table = txn
+                .open_table(crate::schema::ASSETS)
+                .map_err(transaction::db_err)?;
             match table.get(key.as_slice()).map_err(transaction::db_err)? {
                 Some(row) => Ok(Some(decode_media_info(row.value())?)),
                 None => Ok(None),
@@ -46,7 +50,9 @@ impl AssetDb {
     pub fn remove_asset(&self, id: AssetId) -> Result<(), AssetError> {
         let key = asset_key(&id);
         transaction::with_write_txn(&self.db, |txn| {
-            let mut table = txn.open_table(crate::schema::ASSETS).map_err(transaction::db_err)?;
+            let mut table = txn
+                .open_table(crate::schema::ASSETS)
+                .map_err(transaction::db_err)?;
             table.remove(key.as_slice()).map_err(transaction::db_err)?;
             Ok(())
         })
@@ -196,7 +202,11 @@ mod tests {
 
     #[test]
     fn media_info_row_roundtrip_minimal() {
-        let info = MediaInfo::new(AssetId::from_parts(1, 2, 3), &PathBuf::from("a.wav"), MediaType::Audio);
+        let info = MediaInfo::new(
+            AssetId::from_parts(1, 2, 3),
+            &PathBuf::from("a.wav"),
+            MediaType::Audio,
+        );
         let decoded = decode_media_info(&encode_media_info(&info)).unwrap();
         assert_eq!(decoded.id, info.id);
         assert!(decoded.video.is_none() && decoded.audio.is_none());

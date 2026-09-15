@@ -8,11 +8,8 @@ use std::time::Duration;
 
 use tpt_av_asset_cache::CacheStorage;
 use tpt_av_asset_db::{AssetDb, CacheType, JobState};
-use tpt_av_asset_pipeline::{
-    AssetImporter, Job, JobId, ProcessingPipeline, ProgressTracker,
-};
+use tpt_av_asset_pipeline::{AssetImporter, Job, JobId, ProcessingPipeline, ProgressTracker};
 use tpt_av_asset_utils::{AssetError, AssetId, Priority, ProgressReporter};
-use tpt_cadence;
 use tpt_kinetix::{gradient_painter, write_test_video};
 
 fn temp_dir(name: &str) -> PathBuf {
@@ -81,11 +78,16 @@ fn critical_priority_dispatches_first() {
     let order = Arc::new(Mutex::new(Vec::new()));
     let mut pipeline = ProcessingPipeline::new(1).unwrap();
     let low = pipeline.submit(slow(1, Priority::Low, &order)).unwrap();
-    let critical = pipeline.submit(slow(2, Priority::Critical, &order)).unwrap();
+    let critical = pipeline
+        .submit(slow(2, Priority::Critical, &order))
+        .unwrap();
     let normal = pipeline.submit(slow(3, Priority::Normal, &order)).unwrap();
     pipeline.start().unwrap();
 
-    assert!(pipeline.wait_for_all(Duration::from_secs(15)), "jobs must finish");
+    assert!(
+        pipeline.wait_for_all(Duration::from_secs(15)),
+        "jobs must finish"
+    );
     pipeline.stop().unwrap();
 
     let order = order.lock().unwrap().clone();
@@ -94,8 +96,14 @@ fn critical_priority_dispatches_first() {
         pipeline.get_progress(critical).unwrap().unwrap().state,
         JobState::Completed
     );
-    assert_eq!(pipeline.get_progress(low).unwrap().unwrap().state, JobState::Completed);
-    assert_eq!(pipeline.get_progress(normal).unwrap().unwrap().state, JobState::Completed);
+    assert_eq!(
+        pipeline.get_progress(low).unwrap().unwrap().state,
+        JobState::Completed
+    );
+    assert_eq!(
+        pipeline.get_progress(normal).unwrap().unwrap().state,
+        JobState::Completed
+    );
 }
 
 #[test]
@@ -119,7 +127,10 @@ fn cancel_mid_execution_leaves_consistent_state() {
     }
     pipeline.cancel(victim).unwrap();
 
-    let final_state = pipeline.wait_for_timeout(victim, Duration::from_secs(5)).unwrap().state;
+    let final_state = pipeline
+        .wait_for_timeout(victim, Duration::from_secs(5))
+        .unwrap()
+        .state;
     assert_eq!(final_state, JobState::Cancelled);
 
     // The first job still completes; pipeline remains healthy.
@@ -197,15 +208,20 @@ fn failed_dependency_cancels_dependent() {
     let mut pipeline = ProcessingPipeline::new(1).unwrap();
     pipeline.start().unwrap();
 
-    let failing = pipeline.submit(Box::new(FailingJob { id: pipeline.next_job_id() })).unwrap();
-    let dependent = pipeline.submit_with_deps(
-        Box::new(MarkJob {
+    let failing = pipeline
+        .submit(Box::new(FailingJob {
             id: pipeline.next_job_id(),
-            ran: Arc::clone(&ran),
-        }),
-        vec![failing],
-    )
-    .unwrap();
+        }))
+        .unwrap();
+    let dependent = pipeline
+        .submit_with_deps(
+            Box::new(MarkJob {
+                id: pipeline.next_job_id(),
+                ran: Arc::clone(&ran),
+            }),
+            vec![failing],
+        )
+        .unwrap();
 
     pipeline.wait_for(failing).unwrap();
     pipeline.wait_for(dependent).unwrap();
@@ -261,7 +277,8 @@ fn waveform_job_resume_across_pipeline_crash() {
     let wav = dir.join("song.wav");
     tpt_cadence::write_test_wav(&wav, 4.0, 8_000, 1).unwrap();
     let asset = AssetId::from_path(&wav).unwrap();
-    let mut info = tpt_av_asset_utils::MediaInfo::new(asset, &wav, tpt_av_asset_utils::MediaType::Audio);
+    let mut info =
+        tpt_av_asset_utils::MediaInfo::new(asset, &wav, tpt_av_asset_utils::MediaType::Audio);
     info.duration_secs = Some(4.0);
     info.audio = Some(tpt_av_asset_utils::AudioInfo {
         sample_rate: 8_000,
@@ -276,7 +293,8 @@ fn waveform_job_resume_across_pipeline_crash() {
     // Deterministic partial progress: run the generator directly and cancel
     // it at 10% — exactly what an interrupted/crashed generation leaves
     // behind on disk.
-    let total_chunks = (4 * 8_000 + 1023) / 1024; // 31.25 → 32 chunks (last partial)
+    let total_chunks = 4usize * 8_000;
+    let total_chunks = total_chunks.div_ceil(1024); // 31.25 → 32 chunks (last partial)
     let mut cache = tpt_av_asset_cache::WaveformCache::open(asset, &storage).unwrap();
     let reporter = ProgressReporter::with_self_callback(|token| {
         move |e| {
@@ -315,12 +333,22 @@ fn waveform_job_resume_across_pipeline_crash() {
     second.start().unwrap();
     let recovered = second.recover_interrupted(&db, &storage).unwrap();
     assert_eq!(recovered, 1, "the pending waveform job must be re-enqueued");
-    assert!(second.wait_for_all(Duration::from_secs(30)), "recovered job must finish");
+    assert!(
+        second.wait_for_all(Duration::from_secs(30)),
+        "recovered job must finish"
+    );
     second.stop().unwrap();
 
     let cache = tpt_av_asset_cache::WaveformCache::open(asset, &storage).unwrap();
-    assert_eq!(cache.chunk_count(), total_chunks, "resumed generation completes");
-    assert!(cache.chunk_count() >= partial, "chunk count must never regress");
+    assert_eq!(
+        cache.chunk_count(),
+        total_chunks,
+        "resumed generation completes"
+    );
+    assert!(
+        cache.chunk_count() >= partial,
+        "chunk count must never regress"
+    );
     assert!(db.has_cache_entry(asset, CacheType::WaveformPeaks).unwrap());
     let record = &db.all_jobs().unwrap()[0];
     assert_eq!(record.state, JobState::Completed);
@@ -344,7 +372,10 @@ fn importer_end_to_end_populates_all_caches() {
         .with_chunk_size(512);
     let asset = importer.import(&wav).unwrap();
 
-    assert!(pipeline.wait_for_all(Duration::from_secs(30)), "import jobs must finish");
+    assert!(
+        pipeline.wait_for_all(Duration::from_secs(30)),
+        "import jobs must finish"
+    );
 
     assert!(db.get_asset(asset).unwrap().is_some());
     assert!(db.has_cache_entry(asset, CacheType::WaveformPeaks).unwrap());
@@ -358,8 +389,12 @@ fn importer_end_to_end_populates_all_caches() {
     let video_asset = importer.import(&video).unwrap();
     assert!(pipeline.wait_for_all(Duration::from_secs(30)));
 
-    assert!(db.has_cache_entry(video_asset, CacheType::VideoThumbnails).unwrap());
-    assert!(db.has_cache_entry(video_asset, CacheType::VideoProxy).unwrap());
+    assert!(db
+        .has_cache_entry(video_asset, CacheType::VideoThumbnails)
+        .unwrap());
+    assert!(db
+        .has_cache_entry(video_asset, CacheType::VideoProxy)
+        .unwrap());
     assert!(storage.thumbnail_dir(video_asset).exists());
     assert!(storage.proxy_path(video_asset, "mp4").exists());
 

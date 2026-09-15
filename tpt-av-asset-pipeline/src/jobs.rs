@@ -2,7 +2,9 @@
 
 use std::path::PathBuf;
 
-use tpt_av_asset_cache::{CacheStorage, ThumbnailCache, ThumbnailGenerator, WaveformCache, WaveformGenerator};
+use tpt_av_asset_cache::{
+    CacheStorage, ThumbnailCache, ThumbnailGenerator, WaveformCache, WaveformGenerator,
+};
 use tpt_av_asset_db::{AssetDb, CacheType, JobRecord};
 use tpt_av_asset_proxy::{ProxyGenerator, ProxyProfile};
 use tpt_av_asset_utils::{AssetError, AssetId, ProgressReporter};
@@ -25,7 +27,15 @@ impl WaveformJob {
         storage: CacheStorage,
         db: AssetDb,
     ) -> Self {
-        Self { job_id, asset_id, audio_path, chunk_size, sample_rate, storage, db }
+        Self {
+            job_id,
+            asset_id,
+            audio_path,
+            chunk_size,
+            sample_rate,
+            storage,
+            db,
+        }
     }
 }
 
@@ -41,7 +51,15 @@ impl ThumbnailJob {
         storage: CacheStorage,
         db: AssetDb,
     ) -> Self {
-        Self { job_id, asset_id, video_path, interval_secs, resolution, storage, db }
+        Self {
+            job_id,
+            asset_id,
+            video_path,
+            interval_secs,
+            resolution,
+            storage,
+            db,
+        }
     }
 }
 
@@ -56,7 +74,14 @@ impl VideoProxyJob {
         profile: ProxyProfile,
         db: AssetDb,
     ) -> Self {
-        Self { job_id, asset_id, video_path, output, profile, db }
+        Self {
+            job_id,
+            asset_id,
+            video_path,
+            output,
+            profile,
+            db,
+        }
     }
 }
 
@@ -71,7 +96,14 @@ impl AudioProxyJob {
         profile: ProxyProfile,
         db: AssetDb,
     ) -> Self {
-        Self { job_id, asset_id, audio_path, output, profile, db }
+        Self {
+            job_id,
+            asset_id,
+            audio_path,
+            output,
+            profile,
+            db,
+        }
     }
 }
 

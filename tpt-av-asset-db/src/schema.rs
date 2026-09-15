@@ -146,15 +146,24 @@ impl<'a> Dec<'a> {
     }
 
     pub(crate) fn str(&mut self) -> Result<String, AssetError> {
-        String::from_utf8(self.bytes()?.to_vec()).map_err(|e| AssetError::db(format!("corrupt row: {e}")))
+        String::from_utf8(self.bytes()?.to_vec())
+            .map_err(|e| AssetError::db(format!("corrupt row: {e}")))
     }
 
     pub(crate) fn opt_u64(&mut self) -> Result<Option<u64>, AssetError> {
-        Ok(if self.u8()? == 1 { Some(self.u64()?) } else { None })
+        Ok(if self.u8()? == 1 {
+            Some(self.u64()?)
+        } else {
+            None
+        })
     }
 
     pub(crate) fn opt_f64(&mut self) -> Result<Option<f64>, AssetError> {
-        Ok(if self.u8()? == 1 { Some(self.f64()?) } else { None })
+        Ok(if self.u8()? == 1 {
+            Some(self.f64()?)
+        } else {
+            None
+        })
     }
 
     pub(crate) fn is_empty(&self) -> bool {

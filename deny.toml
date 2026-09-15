@@ -1,10 +1,10 @@
 # cargo-deny configuration for tpt-av-asset.
 #
-# Policy (spec section 7): permissive licenses only. No GPL, LGPL, AGPL, or
-# MPL anywhere in the dependency tree.
+# Policy (spec section 7): permissive licenses only. The allow list IS the
+# policy — anything not listed here (GPL, LGPL, AGPL, MPL, ...) is denied,
+# as are the specific banned crates under [bans].
 
 [licenses]
-unlicensed = "deny"
 allow = [
     "MIT",
     "Apache-2.0",
@@ -18,15 +18,6 @@ allow = [
     "Unicode-3.0",
     "Unicode-DFS-2016",
 ]
-deny = [
-    "GPL-2.0",
-    "GPL-3.0",
-    "LGPL-2.1",
-    "LGPL-3.0",
-    "AGPL-3.0",
-    "MPL-2.0",
-]
-copyleft = "deny"
 
 [bans]
 multiple-versions = "warn"
@@ -40,8 +31,7 @@ deny = [
 ]
 
 [advisories]
-vulnerability = "warn"
-unmaintained = "warn"
+version = 2
 yanked = "warn"
 
 [sources]

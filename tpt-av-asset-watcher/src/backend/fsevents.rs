@@ -39,14 +39,16 @@ impl WatcherBackend for FseventsBackend {
             .as_mut()
             .expect("watcher just initialized")
             .watch(directory, notify::RecursiveMode::Recursive)
-            .map_err(|e| AssetError::validation(format!("cannot watch {}: {e}", directory.display())))
+            .map_err(|e| {
+                AssetError::validation(format!("cannot watch {}: {e}", directory.display()))
+            })
     }
 
     fn unwatch(&mut self, directory: &Path) -> Result<(), AssetError> {
         if let Some(watcher) = self.watcher.as_mut() {
-            watcher
-                .unwatch(directory)
-                .map_err(|e| AssetError::validation(format!("cannot unwatch {}: {e}", directory.display())))?;
+            watcher.unwatch(directory).map_err(|e| {
+                AssetError::validation(format!("cannot unwatch {}: {e}", directory.display()))
+            })?;
         }
         Ok(())
     }

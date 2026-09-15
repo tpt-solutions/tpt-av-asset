@@ -5,7 +5,6 @@ use std::path::{Path, PathBuf};
 
 use tpt_av_asset_proxy::{ProxyGenerator, ProxyProfile};
 use tpt_av_asset_utils::{AssetError, ProgressReporter};
-use tpt_cadence;
 use tpt_kinetix::{gradient_painter, write_test_video};
 
 fn temp_dir(name: &str) -> PathBuf {
@@ -41,13 +40,19 @@ fn video_proxy_matches_target_resolution_and_length() {
     let info = proxy.info().clone();
     // 16:9 downscaled into 1280x720.
     assert_eq!((info.width, info.height), (1280, 720));
-    assert_eq!(info.frame_count, 10, "no frame_rate override keeps all frames");
+    assert_eq!(
+        info.frame_count, 10,
+        "no frame_rate override keeps all frames"
+    );
     assert!((info.duration_secs - 1.0).abs() < 1e-9);
 
     // Content survives the round trip (non-uniform pixels).
     let frame = proxy.next_frame().unwrap().unwrap();
     let first = *frame.data.first().unwrap();
-    assert!(frame.data.iter().any(|p| *p != first), "proxy must not be a flat image");
+    assert!(
+        frame.data.iter().any(|p| *p != first),
+        "proxy must not be a flat image"
+    );
 
     let _ = std::fs::remove_dir_all(&dir);
 }

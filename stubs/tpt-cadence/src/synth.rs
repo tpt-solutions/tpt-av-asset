@@ -9,15 +9,20 @@ use crate::{AudioEncoder, AudioSpec, Result};
 /// envelope, so waveform chunks have meaningful, varying peaks.
 ///
 /// # Errors
-/// Returns [`Error`] if the file cannot be created or written.
+/// Returns [`Error`](crate::Error) if the file cannot be created or written.
 pub fn write_test_wav(
     path: &Path,
     duration_secs: f64,
     sample_rate: u32,
     channels: u16,
 ) -> Result<()> {
-    let mut enc: Box<dyn AudioEncoder> =
-        Box::new(WavEncoder::new(path, AudioSpec { sample_rate, channels })?);
+    let mut enc: Box<dyn AudioEncoder> = Box::new(WavEncoder::new(
+        path,
+        AudioSpec {
+            sample_rate,
+            channels,
+        },
+    )?);
     let total = (duration_secs * sample_rate as f64) as u64;
     const BLOCK: usize = 4_096;
     let mut block = Vec::with_capacity(BLOCK);

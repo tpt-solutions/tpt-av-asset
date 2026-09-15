@@ -100,7 +100,10 @@ impl AssetDb {
         let table = txn
             .open_table(crate::schema::CACHE_ENTRIES)
             .map_err(transaction::db_err)?;
-        Ok(table.get(key.as_slice()).map_err(transaction::db_err)?.is_some())
+        Ok(table
+            .get(key.as_slice())
+            .map_err(transaction::db_err)?
+            .is_some())
     }
 
     /// Returns the recorded cache path for an entry, if present.
@@ -132,14 +135,20 @@ impl AssetDb {
     ///
     /// # Errors
     /// Returns [`AssetError::Db`] on storage failure.
-    pub fn list_cache_entries(&self, asset_id: AssetId) -> Result<Vec<(CacheType, PathBuf)>, AssetError> {
+    pub fn list_cache_entries(
+        &self,
+        asset_id: AssetId,
+    ) -> Result<Vec<(CacheType, PathBuf)>, AssetError> {
         let prefix = asset_id.key_bytes();
         let txn = self.db.begin_read().map_err(transaction::db_err)?;
         let table = txn
             .open_table(crate::schema::CACHE_ENTRIES)
             .map_err(transaction::db_err)?;
         let mut entries = Vec::new();
-        for row in table.range(prefix.as_slice()..).map_err(transaction::db_err)? {
+        for row in table
+            .range(prefix.as_slice()..)
+            .map_err(transaction::db_err)?
+        {
             let (key, value) = row.map_err(transaction::db_err)?;
             let key_bytes: &[u8] = key.value();
             if key_bytes.len() != 25 || key_bytes[..24] != prefix[..] {
@@ -178,7 +187,11 @@ impl AssetDb {
                 .collect();
             let mut removed = 0usize;
             for key in keys {
-                if table.remove(key.as_slice()).map_err(transaction::db_err)?.is_some() {
+                if table
+                    .remove(key.as_slice())
+                    .map_err(transaction::db_err)?
+                    .is_some()
+                {
                     removed += 1;
                 }
             }
@@ -204,7 +217,14 @@ mod tests {
 
     #[test]
     fn cache_type_ordering_is_declaration_order() {
-        let types = [CacheType::AudioProxy, CacheType::WaveformPeaks, CacheType::VideoProxy];
-        assert_eq!(types.iter().map(|t| t.as_u8()).collect::<Vec<_>>(), vec![3, 0, 2]);
+        let types = [
+            CacheType::AudioProxy,
+            CacheType::WaveformPeaks,
+            CacheType::VideoProxy,
+        ];
+        assert_eq!(
+            types.iter().map(|t| t.as_u8()).collect::<Vec<_>>(),
+            vec![3, 0, 2]
+        );
     }
 }

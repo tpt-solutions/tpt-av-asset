@@ -4,11 +4,12 @@ use std::fmt;
 
 /// Job priority levels, ordered so that [`Priority::Critical`] is the
 /// highest (`Critical > High > Normal > Low`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub enum Priority {
     /// Deferred processing (pre-caching, background tidy-up).
     Low,
     /// Regular background processing.
+    #[default]
     Normal,
     /// User-initiated work that should jump the queue.
     High,
@@ -56,23 +57,27 @@ impl fmt::Display for Priority {
     }
 }
 
-impl Default for Priority {
-    fn default() -> Self {
-        Priority::Normal
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn critical_sorts_highest() {
-        let mut priorities = vec![Priority::Normal, Priority::Critical, Priority::Low, Priority::High];
+        let mut priorities = vec![
+            Priority::Normal,
+            Priority::Critical,
+            Priority::Low,
+            Priority::High,
+        ];
         priorities.sort();
         assert_eq!(
             priorities,
-            vec![Priority::Low, Priority::Normal, Priority::High, Priority::Critical]
+            vec![
+                Priority::Low,
+                Priority::Normal,
+                Priority::High,
+                Priority::Critical
+            ]
         );
         assert!(Priority::Critical > Priority::High);
         assert_eq!(Priority::default(), Priority::Normal);

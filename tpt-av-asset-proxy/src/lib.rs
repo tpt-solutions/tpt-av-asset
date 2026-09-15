@@ -6,8 +6,8 @@
 //! re-encoded. Profiles ([`ProxyProfile`]) provide the presets
 //! `proxy_1080p_low`, `proxy_720p_medium`, and `audio_proxy_flac`.
 //!
-//! Long runs report progress through [`ProgressReporter`] and abort with
-//! [`AssetError::Cancelled`] when cancelled; partial output files are always
+//! Long runs report progress through [`ProgressReporter`](tpt_av_asset_utils::ProgressReporter) and abort with
+//! [`AssetError::Cancelled`](tpt_av_asset_utils::AssetError::Cancelled) when cancelled; partial output files are always
 //! removed, so an output path only ever contains a complete proxy.
 
 pub mod audio_proxy;

@@ -32,9 +32,9 @@ impl TkvDecoder {
         let mut reader = BufReader::new(file);
 
         let mut header = [0u8; HEADER_LEN as usize];
-        reader.read_exact(&mut header).map_err(|e| {
-            Error::Format(format!("truncated TKV header: {e}"))
-        })?;
+        reader
+            .read_exact(&mut header)
+            .map_err(|e| Error::Format(format!("truncated TKV header: {e}")))?;
         if &header[0..4] != MAGIC {
             return Err(Error::Format("missing TKV1 magic".into()));
         }
@@ -121,7 +121,7 @@ pub struct TkvEncoder {
 
 impl TkvEncoder {
     /// Creates the file and writes a placeholder header (frame count is
-    /// patched by [`TkvEncoder::finish`]).
+    /// patched by `finish`).
     ///
     /// # Errors
     /// Returns [`Error`] if the file cannot be created.

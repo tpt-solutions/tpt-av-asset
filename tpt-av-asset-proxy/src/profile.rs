@@ -83,8 +83,13 @@ impl ProxyProfile {
             u64::from(self.resolution.0.max(1)),
             u64::from(self.resolution.1.max(1)),
         );
-        let (src_w, src_h) = (u64::from(source_width.max(1)), u64::from(source_height.max(1)));
-        let scale = (max_w as f64 / src_w as f64).min(max_h as f64 / src_h as f64).min(1.0);
+        let (src_w, src_h) = (
+            u64::from(source_width.max(1)),
+            u64::from(source_height.max(1)),
+        );
+        let scale = (max_w as f64 / src_w as f64)
+            .min(max_h as f64 / src_h as f64)
+            .min(1.0);
         let w = ((src_w as f64 * scale).floor() as u64).max(2) & !1;
         let h = ((src_h as f64 * scale).floor() as u64).max(2) & !1;
         (w as u32, h as u32)
@@ -98,17 +103,25 @@ impl ProxyProfile {
     pub fn validate(&self) -> Result<(), AssetError> {
         if self.is_audio_only() {
             if self.audio_codec.is_empty() {
-                return Err(AssetError::validation("audio proxy profile needs an audio codec"));
+                return Err(AssetError::validation(
+                    "audio proxy profile needs an audio codec",
+                ));
             }
         } else {
             if self.resolution.0 == 0 || self.resolution.1 == 0 {
-                return Err(AssetError::validation("video proxy resolution must be positive"));
+                return Err(AssetError::validation(
+                    "video proxy resolution must be positive",
+                ));
             }
             if self.video_codec.is_empty() {
-                return Err(AssetError::validation("video proxy profile needs a video codec"));
+                return Err(AssetError::validation(
+                    "video proxy profile needs a video codec",
+                ));
             }
             if self.video_bit_rate == 0 {
-                return Err(AssetError::validation("video proxy bit rate must be positive"));
+                return Err(AssetError::validation(
+                    "video proxy bit rate must be positive",
+                ));
             }
         }
         if let Some(fps) = self.frame_rate {

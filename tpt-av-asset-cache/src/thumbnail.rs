@@ -141,22 +141,22 @@ impl ThumbnailCache {
     /// errors on write.
     pub fn write_thumbnail(&mut self, thumbnail: &Thumbnail) -> Result<(), AssetError> {
         let index = self.index_for_time(thumbnail.time_secs);
-        let img = image::RgbaImage::from_raw(
-            thumbnail.width,
-            thumbnail.height,
-            thumbnail.data.clone(),
-        )
-        .ok_or_else(|| {
-            AssetError::validation(format!(
-                "thumbnail data length {} does not match {}x{} RGBA",
-                thumbnail.data.len(),
-                thumbnail.width,
-                thumbnail.height
-            ))
-        })?;
+        let img =
+            image::RgbaImage::from_raw(thumbnail.width, thumbnail.height, thumbnail.data.clone())
+                .ok_or_else(|| {
+                AssetError::validation(format!(
+                    "thumbnail data length {} does not match {}x{} RGBA",
+                    thumbnail.data.len(),
+                    thumbnail.width,
+                    thumbnail.height
+                ))
+            })?;
         let mut jpeg = Vec::new();
         image::DynamicImage::ImageRgba8(img)
-            .write_to(&mut std::io::Cursor::new(&mut jpeg), image::ImageFormat::Jpeg)
+            .write_to(
+                &mut std::io::Cursor::new(&mut jpeg),
+                image::ImageFormat::Jpeg,
+            )
             .map_err(|e| AssetError::codec(format!("jpeg encode failed: {e}")))?;
 
         let path = Self::file_for_index(&self.dir, index);

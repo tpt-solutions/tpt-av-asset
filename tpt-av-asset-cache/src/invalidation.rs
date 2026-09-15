@@ -63,7 +63,10 @@ mod tests {
     use std::path::PathBuf;
 
     fn temp_dir(name: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("tpt-av-asset-cache-inval-{name}-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!(
+            "tpt-av-asset-cache-inval-{name}-{}",
+            std::process::id()
+        ));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         dir
@@ -83,8 +86,10 @@ mod tests {
         std::fs::create_dir_all(&thumbs).unwrap();
         std::fs::write(thumbs.join("000000.jpg"), b"fake").unwrap();
 
-        db.record_cache_entry(id, CacheType::WaveformPeaks, &peaks).unwrap();
-        db.record_cache_entry(id, CacheType::VideoThumbnails, &thumbs).unwrap();
+        db.record_cache_entry(id, CacheType::WaveformPeaks, &peaks)
+            .unwrap();
+        db.record_cache_entry(id, CacheType::VideoThumbnails, &thumbs)
+            .unwrap();
         assert_eq!(db.list_cache_entries(id).unwrap().len(), 2);
 
         let removed = invalidate_asset(&db, &storage, id).unwrap();

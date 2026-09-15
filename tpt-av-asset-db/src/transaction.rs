@@ -48,7 +48,8 @@ mod tests {
     use std::path::PathBuf;
 
     fn db_path(name: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("tpt-av-asset-db-{name}-{}", std::process::id()));
+        let dir =
+            std::env::temp_dir().join(format!("tpt-av-asset-db-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         dir.join("assets.redb")
@@ -61,7 +62,9 @@ mod tests {
 
         with_write_txn(&db, |txn| {
             let mut table = txn.open_table(ASSETS).map_err(db_err)?;
-            table.insert(b"key1".as_slice(), b"value1".as_slice()).map_err(db_err)?;
+            table
+                .insert(b"key1".as_slice(), b"value1".as_slice())
+                .map_err(db_err)?;
             Ok(())
         })
         .unwrap();

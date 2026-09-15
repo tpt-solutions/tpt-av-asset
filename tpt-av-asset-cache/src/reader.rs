@@ -39,8 +39,8 @@ impl WaveformReader {
     /// Opens and validates a `.peaks` file.
     ///
     /// # Errors
-    /// Returns [`AssetError::Io`] for I/O failures and
-    /// [`AssetError::Validation`] for a bad header.
+    /// Returns [`AssetError::Io`](tpt_av_asset_utils::AssetError::Io) for I/O failures and
+    /// [`AssetError::Validation`](tpt_av_asset_utils::AssetError::Validation) for a bad header.
     pub fn open(path: &Path) -> Result<Self, tpt_av_asset_utils::AssetError> {
         let file = File::open(path)?;
         let mut header = [0u8; HEADER_LEN as usize];
@@ -77,7 +77,7 @@ impl WaveformReader {
     /// Duplicates the reader (same open file handle semantics).
     ///
     /// # Errors
-    /// Returns [`AssetError::Io`] if the handle cannot be cloned.
+    /// Returns [`AssetError::Io`](tpt_av_asset_utils::AssetError::Io) if the handle cannot be cloned.
     pub fn try_clone(&self) -> Result<Self, tpt_av_asset_utils::AssetError> {
         Ok(Self {
             file: self.file.try_clone()?,
@@ -93,8 +93,11 @@ impl WaveformReader {
     /// Allocation-free and lock-free; see the [module docs](self).
     ///
     /// # Errors
-    /// Returns [`AssetError::Io`] on read failure.
-    pub fn read_chunk(&self, index: u64) -> Result<Option<WaveformChunk>, tpt_av_asset_utils::AssetError> {
+    /// Returns [`AssetError::Io`](tpt_av_asset_utils::AssetError::Io) on read failure.
+    pub fn read_chunk(
+        &self,
+        index: u64,
+    ) -> Result<Option<WaveformChunk>, tpt_av_asset_utils::AssetError> {
         if index >= self.chunk_count {
             return Ok(None);
         }
@@ -110,7 +113,7 @@ impl WaveformReader {
     /// Allocation-free and lock-free; `out` must be pre-allocated.
     ///
     /// # Errors
-    /// Returns [`AssetError::Io`] on read failure.
+    /// Returns [`AssetError::Io`](tpt_av_asset_utils::AssetError::Io) on read failure.
     pub fn read_range_into(
         &self,
         start_index: u64,
@@ -165,13 +168,16 @@ pub(crate) fn read_exact_at(file: &File, buf: &mut [u8], mut offset: u64) -> io:
                 ));
             }
             offset += n as u64;
-            filled += n as usize;
+            filled += n;
         }
         Ok(())
     }
     #[cfg(not(any(unix, windows)))]
     {
         let _ = (&file, &mut buf, &mut offset);
-        Err(io::Error::new(io::ErrorKind::Unsupported, "no positioned read on this platform"))
+        Err(io::Error::new(
+            io::ErrorKind::Unsupported,
+            "no positioned read on this platform",
+        ))
     }
 }

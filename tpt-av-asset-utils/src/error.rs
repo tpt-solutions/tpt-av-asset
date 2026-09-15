@@ -85,18 +85,12 @@ mod tests {
 
     #[test]
     fn display_is_human_readable() {
-        assert_eq!(
-            AssetError::Cancelled.to_string(),
-            "operation cancelled"
-        );
+        assert_eq!(AssetError::Cancelled.to_string(), "operation cancelled");
         assert_eq!(
             AssetError::validation("bad range").to_string(),
             "validation error: bad range"
         );
-        assert_eq!(
-            AssetError::JobNotFound(7).to_string(),
-            "unknown job id 7"
-        );
+        assert_eq!(AssetError::JobNotFound(7).to_string(), "unknown job id 7");
     }
 
     #[test]

@@ -119,7 +119,10 @@ mod tests {
     }
 
     fn job(n: u64, priority: Priority) -> Box<dyn Job> {
-        Box::new(Dummy { id: JobId(n), priority })
+        Box::new(Dummy {
+            id: JobId(n),
+            priority,
+        })
     }
 
     #[test]
@@ -129,13 +132,25 @@ mod tests {
         queue.push(job(2, Priority::Low));
         queue.push(job(3, Priority::Critical));
         queue.push(job(4, Priority::Normal));
-        assert_eq!(queue.priorities(), vec![Priority::Critical, Priority::Normal, Priority::Normal, Priority::Low]);
+        assert_eq!(
+            queue.priorities(),
+            vec![
+                Priority::Critical,
+                Priority::Normal,
+                Priority::Normal,
+                Priority::Low
+            ]
+        );
         assert_eq!(
             queue.pop_ready(|_| true).unwrap().id(),
             JobId(3),
             "critical jumps the queue"
         );
-        assert_eq!(queue.pop_ready(|_| true).unwrap().id(), JobId(1), "FIFO within priority");
+        assert_eq!(
+            queue.pop_ready(|_| true).unwrap().id(),
+            JobId(1),
+            "FIFO within priority"
+        );
         assert_eq!(queue.pop_ready(|_| true).unwrap().id(), JobId(4));
         assert_eq!(queue.pop_ready(|_| true).unwrap().id(), JobId(2));
         assert!(queue.is_empty());

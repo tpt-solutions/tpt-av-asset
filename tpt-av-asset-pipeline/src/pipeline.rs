@@ -56,7 +56,9 @@ impl Shared {
         let Some(db) = db_guard.as_ref() else { return };
         let (meta, progress) = {
             let submitted = self.submitted.lock().expect("submitted poisoned");
-            let Some(meta) = submitted.get(&job_id.0).cloned() else { return };
+            let Some(meta) = submitted.get(&job_id.0).cloned() else {
+                return;
+            };
             let progress = self
                 .tracker
                 .snapshot(job_id)
@@ -168,18 +170,26 @@ impl ProcessingPipeline {
             return Err(AssetError::ChannelClosed);
         }
         let id = job.id();
-        self.shared.scheduler.lock().expect("scheduler poisoned").register(id, deps);
+        self.shared
+            .scheduler
+            .lock()
+            .expect("scheduler poisoned")
+            .register(id, deps);
         self.shared.tracker.register(id);
-        self.shared.submitted.lock().expect("submitted poisoned").insert(
-            id.0,
-            SubmittedMeta {
-                asset_id: job.asset_id(),
-                priority: job.priority(),
-                kind: job.kind(),
-                payload: job.payload(),
-                created_ms: now_ms(),
-            },
-        );
+        self.shared
+            .submitted
+            .lock()
+            .expect("submitted poisoned")
+            .insert(
+                id.0,
+                SubmittedMeta {
+                    asset_id: job.asset_id(),
+                    priority: job.priority(),
+                    kind: job.kind(),
+                    payload: job.payload(),
+                    created_ms: now_ms(),
+                },
+            );
         self.shared.persist(id, JobState::Pending, None);
 
         {
@@ -211,15 +221,27 @@ impl ProcessingPipeline {
             let mut queue = self.shared.queue.lock().expect("queue poisoned");
             if queue.remove(job_id).is_some() {
                 drop(queue);
-                self.shared.tracker.update_state(job_id, JobState::Cancelled);
-                self.shared.scheduler.lock().expect("scheduler poisoned").mark_dead(job_id);
+                self.shared
+                    .tracker
+                    .update_state(job_id, JobState::Cancelled);
+                self.shared
+                    .scheduler
+                    .lock()
+                    .expect("scheduler poisoned")
+                    .mark_dead(job_id);
                 self.shared.persist(job_id, JobState::Cancelled, None);
                 return Ok(());
             }
         }
 
         // Running: flip the cooperative token; the worker finalizes.
-        if let Some(reporter) = self.shared.running.lock().expect("running poisoned").get(&job_id.0) {
+        if let Some(reporter) = self
+            .shared
+            .running
+            .lock()
+            .expect("running poisoned")
+            .get(&job_id.0)
+        {
             reporter.cancel();
         }
         Ok(())
@@ -229,7 +251,10 @@ impl ProcessingPipeline {
     ///
     /// # Errors
     /// Returns [`AssetError::JobNotFound`] for unknown job ids.
-    pub fn get_progress(&self, job_id: JobId) -> Result<Option<crate::progress::JobProgress>, AssetError> {
+    pub fn get_progress(
+        &self,
+        job_id: JobId,
+    ) -> Result<Option<crate::progress::JobProgress>, AssetError> {
         match self.shared.tracker.snapshot(job_id) {
             Some(progress) => Ok(Some(progress)),
             None => Err(AssetError::JobNotFound(job_id.0)),
@@ -339,5 +364,4 @@ impl ProcessingPipeline {
         }
         Ok(recovered)
     }
-
 }

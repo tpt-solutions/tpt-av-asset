@@ -4,7 +4,7 @@
 use std::path::Path;
 
 use redb::ReadableTable;
-use tpt_av_asset_utils::{AssetError, MediaInfo};
+use tpt_av_asset_utils::{AssetError, AssetId, MediaInfo};
 
 use crate::asset_table::decode_media_info;
 use crate::transaction;
@@ -17,7 +17,9 @@ impl AssetDb {
     /// Returns [`AssetError::Db`] on storage failure.
     pub fn list_assets(&self) -> Result<Vec<MediaInfo>, AssetError> {
         let txn = self.db.begin_read().map_err(transaction::db_err)?;
-        let table = txn.open_table(crate::schema::ASSETS).map_err(transaction::db_err)?;
+        let table = txn
+            .open_table(crate::schema::ASSETS)
+            .map_err(transaction::db_err)?;
         let mut assets = Vec::new();
         for row in table.iter().map_err(transaction::db_err)? {
             let (_, value) = row.map_err(transaction::db_err)?;
@@ -48,7 +50,8 @@ impl AssetDb {
             .list_assets()?
             .into_iter()
             .filter(|info| {
-                let stored = std::fs::canonicalize(&info.path).unwrap_or_else(|_| info.path.clone());
+                let stored =
+                    std::fs::canonicalize(&info.path).unwrap_or_else(|_| info.path.clone());
                 stored == target
             })
             .collect())

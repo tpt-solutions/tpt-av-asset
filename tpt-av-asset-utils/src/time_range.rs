@@ -18,12 +18,18 @@ impl TimeRange {
     /// Returns [`AssetError::Validation`] if either bound is negative/NaN or
     /// `start >= end`.
     pub fn new(start_secs: f64, end_secs: f64) -> Result<Self, AssetError> {
-        if !(start_secs.is_finite() && end_secs.is_finite()) || start_secs < 0.0 || start_secs >= end_secs {
+        if !(start_secs.is_finite() && end_secs.is_finite())
+            || start_secs < 0.0
+            || start_secs >= end_secs
+        {
             return Err(AssetError::validation(format!(
                 "invalid time range [{start_secs}, {end_secs})"
             )));
         }
-        Ok(Self { start_secs, end_secs })
+        Ok(Self {
+            start_secs,
+            end_secs,
+        })
     }
 
     /// Range length in seconds.
@@ -46,7 +52,11 @@ impl TimeRange {
         if !self.intersects(other) {
             return None;
         }
-        TimeRange::new(self.start_secs.max(other.start_secs), self.end_secs.min(other.end_secs)).ok()
+        TimeRange::new(
+            self.start_secs.max(other.start_secs),
+            self.end_secs.min(other.end_secs),
+        )
+        .ok()
     }
 }
 
@@ -72,7 +82,10 @@ mod tests {
         let c = TimeRange::new(10.0, 12.0).unwrap();
         let d = TimeRange::new(20.0, 30.0).unwrap();
         assert!(a.intersects(&b));
-        assert!(!a.intersects(&c), "half-open: [0,10) and [10,12) do not touch");
+        assert!(
+            !a.intersects(&c),
+            "half-open: [0,10) and [10,12) do not touch"
+        );
         assert!(!a.intersects(&d));
 
         let ov = a.overlap(&b).unwrap();

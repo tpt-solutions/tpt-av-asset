@@ -51,7 +51,12 @@ impl PollingBackend {
     pub fn new(sender: Sender<FileEvent>, interval: Duration) -> Self {
         let state = Arc::new(Mutex::new(PollState::default()));
         let shutdown = Arc::new(AtomicBool::new(false));
-        let handle = start_scanner(Arc::clone(&state), Arc::clone(&shutdown), sender.clone(), interval);
+        let handle = start_scanner(
+            Arc::clone(&state),
+            Arc::clone(&shutdown),
+            sender.clone(),
+            interval,
+        );
         Self {
             interval,
             state,
@@ -79,7 +84,7 @@ impl WatcherBackend for PollingBackend {
     fn watch(&mut self, directory: &Path) -> Result<(), AssetError> {
         let dir = std::fs::canonicalize(directory)?;
         let mut state = self.state.lock().expect("poll state poisoned");
-        if state.directories.iter().any(|d| *d == dir) {
+        if state.directories.contains(&dir) {
             return Ok(());
         }
         let mut snapshot = HashMap::new();

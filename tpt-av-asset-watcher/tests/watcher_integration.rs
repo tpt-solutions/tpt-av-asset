@@ -91,7 +91,10 @@ fn polling_backend_detects_lifecycle_events() {
     let later = wait_for(&mut watcher, Duration::from_millis(300), |e| {
         e.path.ends_with("later.wav")
     });
-    assert!(later.is_none(), "unwatched directories must not emit events");
+    assert!(
+        later.is_none(),
+        "unwatched directories must not emit events"
+    );
 
     let _ = std::fs::remove_dir_all(&dir);
 }
@@ -111,9 +114,10 @@ fn polling_backend_rename_surfaces_as_delete_plus_create() {
 
     let old = media.join("before.wav");
     std::fs::write(&old, b"data").unwrap();
-    assert!(
-        wait_for(&mut watcher, Duration::from_secs(5), |e| e.path.ends_with("before.wav")).is_some()
-    );
+    assert!(wait_for(&mut watcher, Duration::from_secs(5), |e| e
+        .path
+        .ends_with("before.wav"))
+    .is_some());
 
     std::thread::sleep(Duration::from_millis(250));
     std::fs::rename(&old, media.join("after.wav")).unwrap();
@@ -126,7 +130,10 @@ fn polling_backend_rename_surfaces_as_delete_plus_create() {
         e.event_type == FileEventType::Created && e.path.ends_with("after.wav")
     })
     .is_some();
-    assert!(saw_delete && saw_create, "polling reports renames as delete+create");
+    assert!(
+        saw_delete && saw_create,
+        "polling reports renames as delete+create"
+    );
 
     let _ = std::fs::remove_dir_all(&dir);
 }
@@ -149,7 +156,8 @@ fn cache_invalidator_reacts_to_modification() {
     db.upsert_asset(&info).unwrap();
     let peaks = storage.waveform_path(id);
     std::fs::write(&peaks, b"peaks-bytes").unwrap();
-    db.record_cache_entry(id, CacheType::WaveformPeaks, &peaks).unwrap();
+    db.record_cache_entry(id, CacheType::WaveformPeaks, &peaks)
+        .unwrap();
     assert!(db.has_cache_entry(id, CacheType::WaveformPeaks).unwrap());
 
     let invalidator = CacheInvalidator::new(db.clone(), storage.clone());
@@ -171,7 +179,8 @@ fn cache_invalidator_reacts_to_modification() {
     db.upsert_asset(&info2).unwrap();
     let peaks2 = storage.waveform_path(id2);
     std::fs::write(&peaks2, b"peaks2").unwrap();
-    db.record_cache_entry(id2, CacheType::WaveformPeaks, &peaks2).unwrap();
+    db.record_cache_entry(id2, CacheType::WaveformPeaks, &peaks2)
+        .unwrap();
 
     let events = vec![FileEvent::now(FileEventType::Deleted, &file)];
     assert_eq!(invalidator.handle_all(&events).unwrap(), 1);
@@ -227,7 +236,10 @@ fn debounced_events_coalesce_through_watcher() {
             Err(_) => break,
         }
     }
-    assert!(modified <= 2, "debouncer must collapse the storm (saw {modified})");
+    assert!(
+        modified <= 2,
+        "debouncer must collapse the storm (saw {modified})"
+    );
     assert!(modified >= 1, "at least one Modified must surface");
 
     let _ = std::fs::remove_dir_all(&dir);

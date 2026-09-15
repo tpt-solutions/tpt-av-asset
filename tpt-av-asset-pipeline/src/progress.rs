@@ -232,7 +232,10 @@ mod tests {
         tracker.update_state(id, JobState::Completed);
         let done = tracker.wait_for(id).unwrap();
         assert_eq!(done.state, JobState::Completed);
-        assert!((done.fraction - 1.0).abs() < f64::EPSILON, "completion saturates");
+        assert!(
+            (done.fraction - 1.0).abs() < f64::EPSILON,
+            "completion saturates"
+        );
     }
 
     #[test]
@@ -249,7 +252,9 @@ mod tests {
         let tracker = ProgressTracker::new();
         let id = JobId(9);
         tracker.register(id);
-        let snap = tracker.wait_for_timeout(id, Duration::from_millis(50)).unwrap();
+        let snap = tracker
+            .wait_for_timeout(id, Duration::from_millis(50))
+            .unwrap();
         assert_eq!(snap.state, JobState::Pending);
     }
 

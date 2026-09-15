@@ -35,7 +35,8 @@ pub fn generate(
     } else {
         30.0
     };
-    let mut sink = VideoEncoderSink::open(output_path, profile, info.width, info.height, source_fps)?;
+    let mut sink =
+        VideoEncoderSink::open(output_path, profile, info.width, info.height, source_fps)?;
     let target_fps = profile.frame_rate.unwrap_or(source_fps);
 
     let total = u64::from(info.frame_count.max(1));

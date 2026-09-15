@@ -140,8 +140,9 @@ impl WavDecoder {
                 let v = ((raw[0] as i32) | ((raw[1] as i32) << 8) | ((raw[2] as i32) << 16)) << 8;
                 v as f32 / (1u32 << 31) as f32
             }
-            (_, 4) => i32::from_le_bytes(raw.try_into().expect("4 bytes")) as f32
-                / (1u32 << 31) as f32,
+            (_, 4) => {
+                i32::from_le_bytes(raw.try_into().expect("4 bytes")) as f32 / (1u32 << 31) as f32
+            }
             _ => 0.0,
         }
     }
@@ -181,7 +182,7 @@ pub struct WavEncoder {
 
 impl WavEncoder {
     /// Creates the file and writes a placeholder header (patched by
-    /// [`WavEncoder::finish`]).
+    /// `finish`).
     ///
     /// # Errors
     /// Returns [`Error`] if the file cannot be created or written.
@@ -243,10 +244,7 @@ impl WavEncoder {
     fn finish_impl(mut self) -> Result<()> {
         self.writer.flush()?;
         let data_len = self.bytes_written;
-        let mut file = self
-            .writer
-            .into_inner()
-            .map_err(|e| e.into_error())?;
+        let mut file = self.writer.into_inner().map_err(|e| e.into_error())?;
         file.seek(SeekFrom::Start(4))?;
         file.write_all(&(36 + data_len).to_le_bytes())?;
         file.seek(SeekFrom::Start(40))?;
@@ -296,8 +294,17 @@ mod tests {
     #[test]
     fn encoder_patches_header() {
         let path = temp_path("encode.wav");
-        let mut enc = WavEncoder::new(&path, AudioSpec { sample_rate: 4_000, channels: 1 }).unwrap();
-        let samples: Vec<f32> = (0..4_000).map(|i| ((i as f32) * 0.01).sin() * 0.25).collect();
+        let mut enc = WavEncoder::new(
+            &path,
+            AudioSpec {
+                sample_rate: 4_000,
+                channels: 1,
+            },
+        )
+        .unwrap();
+        let samples: Vec<f32> = (0..4_000)
+            .map(|i| ((i as f32) * 0.01).sin() * 0.25)
+            .collect();
         enc.write_samples(&samples).unwrap();
         Box::new(enc).finish().unwrap();
 

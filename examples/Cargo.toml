@@ -18,6 +18,10 @@ tpt-av-asset-utils.workspace = true
 tpt-cadence.workspace = true
 tpt-kinetix.workspace = true
 
+[lib]
+name = "tpt_av_asset_examples"
+path = "src/lib.rs"
+
 [[bin]]
 name = "import_media"
 path = "src/bin/import_media.rs"

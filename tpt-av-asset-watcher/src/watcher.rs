@@ -78,7 +78,8 @@ impl MediaWatcher {
     /// backend refuses.
     pub fn watch(&mut self, directory: &Path) -> Result<(), AssetError> {
         self.backend.watch(directory)?;
-        let canonical = std::fs::canonicalize(directory).unwrap_or_else(|_| directory.to_path_buf());
+        let canonical =
+            std::fs::canonicalize(directory).unwrap_or_else(|_| directory.to_path_buf());
         if !self.directories.contains(&canonical) {
             self.directories.push(canonical);
         }
@@ -92,7 +93,8 @@ impl MediaWatcher {
     /// Returns [`AssetError`] if the backend fails to detach.
     pub fn unwatch(&mut self, directory: &Path) -> Result<(), AssetError> {
         self.backend.unwatch(directory)?;
-        let canonical = std::fs::canonicalize(directory).unwrap_or_else(|_| directory.to_path_buf());
+        let canonical =
+            std::fs::canonicalize(directory).unwrap_or_else(|_| directory.to_path_buf());
         self.directories.retain(|d| *d != canonical);
         Ok(())
     }
