@@ -4,7 +4,7 @@
 //! cargo run -p tpt-av-asset-examples --bin proxy_generator [-- path/to/folder]
 //! ```
 //!
-//! Walks the folder for `.wav` / `.tkv` files and renders each through the
+//! Walks the folder for `.wav` / `.tkvp` files and renders each through the
 //! proxy engine (720p medium preset) into `<folder>/proxies/`.
 
 use std::path::{Path, PathBuf};
@@ -26,7 +26,7 @@ fn run() -> Result<(), AssetError> {
             // Demo mode: synthesize a couple of sources to convert.
             let demo = PathBuf::from("demo").join("batch");
             tpt_av_asset_examples::ensure_demo_media(&demo.join("intro.wav"))?;
-            tpt_av_asset_examples::ensure_demo_media(&demo.join("b_roll.tkv"))?;
+            tpt_av_asset_examples::ensure_demo_media(&demo.join("b_roll.tkvp"))?;
             demo
         }
     };
@@ -68,9 +68,9 @@ fn run() -> Result<(), AssetError> {
             .map(|s| s.to_string_lossy().into_owned())
             .unwrap_or_else(|| "media".to_string());
         let output = out_dir.join(if is_audio {
-            format!("{stem}_proxy.flac")
+            format!("{stem}_proxy.wav")
         } else {
-            format!("{stem}_proxy.mp4")
+            format!("{stem}_proxy.tkvp")
         });
 
         print!("  {} → {} ", source.display(), output.display());
@@ -113,7 +113,7 @@ fn collect_media(folder: &Path) -> Result<Vec<PathBuf>, AssetError> {
         }
         let is_media = path.extension().and_then(|e| e.to_str()).is_some_and(|e| {
             let e = e.to_ascii_lowercase();
-            e == "wav" || e == "tkv"
+            e == "wav" || e == "tkvp"
         });
         if is_media {
             sources.push(path);

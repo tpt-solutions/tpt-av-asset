@@ -11,8 +11,13 @@ keywords = ["media", "audio", "video", "asset", "cache"]
 categories = ["multimedia"]
 
 [dependencies]
+tpt-av-asset-cache.workspace = true
 tpt-av-asset-utils.workspace = true
-tpt-cadence.workspace = true
-tpt-kinetix.workspace = true
+tpt-av-cadence-core.workspace = true
+tpt-av-cadence-wav.workspace = true
+tpt-av-cadence-flac.workspace = true
 image.workspace = true
 log.workspace = true
+
+[dev-dependencies]
+tpt-av-asset-test-media.workspace = true

@@ -9,8 +9,8 @@ use std::time::Duration;
 use tpt_av_asset_cache::CacheStorage;
 use tpt_av_asset_db::{AssetDb, CacheType, JobState};
 use tpt_av_asset_pipeline::{AssetImporter, Job, JobId, ProcessingPipeline, ProgressTracker};
+use tpt_av_asset_test_media::{gradient_painter, write_proxy_video, write_test_wav};
 use tpt_av_asset_utils::{AssetError, AssetId, Priority, ProgressReporter};
-use tpt_kinetix::{gradient_painter, write_test_video};
 
 fn temp_dir(name: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!(
@@ -275,7 +275,7 @@ fn waveform_job_resume_across_pipeline_crash() {
     let storage = CacheStorage::new(dir.join("cache"));
 
     let wav = dir.join("song.wav");
-    tpt_cadence::write_test_wav(&wav, 4.0, 8_000, 1).unwrap();
+    write_test_wav(&wav, 4.0, 8_000, 1).unwrap();
     let asset = AssetId::from_path(&wav).unwrap();
     let mut info =
         tpt_av_asset_utils::MediaInfo::new(asset, &wav, tpt_av_asset_utils::MediaType::Audio);
@@ -363,7 +363,7 @@ fn importer_end_to_end_populates_all_caches() {
     let db = AssetDb::open(&dir.join("db.redb")).unwrap();
     let storage = CacheStorage::new(dir.join("cache"));
     let wav = dir.join("song.wav");
-    tpt_cadence::write_test_wav(&wav, 1.5, 8_000, 1).unwrap();
+    write_test_wav(&wav, 1.5, 8_000, 1).unwrap();
 
     let mut pipeline = ProcessingPipeline::with_db(2, db.clone()).unwrap();
     pipeline.start().unwrap();
@@ -381,11 +381,11 @@ fn importer_end_to_end_populates_all_caches() {
     assert!(db.has_cache_entry(asset, CacheType::WaveformPeaks).unwrap());
     assert!(db.has_cache_entry(asset, CacheType::AudioProxy).unwrap());
     assert!(storage.waveform_path(asset).exists());
-    assert!(storage.proxy_path(asset, "flac").exists());
+    assert!(storage.proxy_path(asset, "wav").exists());
 
     // --- Video asset ---
-    let video = dir.join("clip.tkv");
-    write_test_video(&video, 192, 108, 10.0, 1.0, gradient_painter).unwrap();
+    let video = dir.join("clip.tkvp");
+    write_proxy_video(&video, 192, 108, 10.0, 10, gradient_painter).unwrap();
     let video_asset = importer.import(&video).unwrap();
     assert!(pipeline.wait_for_all(Duration::from_secs(30)));
 
@@ -396,7 +396,7 @@ fn importer_end_to_end_populates_all_caches() {
         .has_cache_entry(video_asset, CacheType::VideoProxy)
         .unwrap());
     assert!(storage.thumbnail_dir(video_asset).exists());
-    assert!(storage.proxy_path(video_asset, "mp4").exists());
+    assert!(storage.proxy_path(video_asset, "tkvp").exists());
 
     // import() returns immediately with an indexed asset:
     assert_eq!(db.list_assets().unwrap().len(), 2);

@@ -13,7 +13,15 @@ categories = ["multimedia"]
 [dependencies]
 tpt-av-asset-utils.workspace = true
 tpt-av-asset-db.workspace = true
-tpt-cadence.workspace = true
-tpt-kinetix.workspace = true
+tpt-av-cadence-core.workspace = true
+tpt-av-cadence-wav.workspace = true
+tpt-av-cadence-flac.workspace = true
+tpt-kinetix-core.workspace = true
+tpt-kinetix-demux.workspace = true
+tpt-kinetix-h264.workspace = true
+tpt-kinetix-lossless.workspace = true
 image.workspace = true
 log.workspace = true
+
+[dev-dependencies]
+tpt-av-asset-test-media.workspace = true

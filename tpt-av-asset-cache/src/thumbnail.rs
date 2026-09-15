@@ -248,10 +248,11 @@ impl ThumbnailCache {
 
 /// Generates video thumbnails from a video file.
 ///
-/// Seeks the `tpt-kinetix` decoder at every interval boundary, resizes the
-/// frame to the configured resolution, and writes JPEG thumbnails.
-/// Reports progress per thumbnail and aborts with [`AssetError::Cancelled`]
-/// when the reporter is cancelled.
+/// Seeks a [`crate::video::VideoSource`] (MP4/H.264 via the real kinetix
+/// stack, or the TPT proxy stream) at every interval boundary, resizes the
+/// RGBA frame to the configured resolution, and writes JPEG thumbnails.
+/// Reports progress per thumbnail and aborts with
+/// [`AssetError::Cancelled`] when the reporter is cancelled.
 #[derive(Debug, Clone)]
 pub struct ThumbnailGenerator {
     /// Interval between thumbnails in seconds.
@@ -281,18 +282,29 @@ impl ThumbnailGenerator {
         cache: &mut ThumbnailCache,
         progress: &tpt_av_asset_utils::ProgressReporter,
     ) -> Result<(), AssetError> {
-        let mut decoder =
-            tpt_kinetix::open(video_path).map_err(|e| AssetError::codec(e.to_string()))?;
-        let info = decoder.info().clone();
+        let mut source = crate::video::open_video(video_path)?;
+        self.generate_from_source(source.as_mut(), cache, progress)
+    }
+
+    /// Generates thumbnails from an already-open video source.
+    ///
+    /// # Errors
+    /// Same as [`ThumbnailGenerator::generate`].
+    pub fn generate_from_source(
+        &self,
+        source: &mut dyn crate::video::VideoSource,
+        cache: &mut ThumbnailCache,
+        progress: &tpt_av_asset_utils::ProgressReporter,
+    ) -> Result<(), AssetError> {
+        let info = source.info().clone();
         let count = ((info.duration_secs / self.interval_secs).ceil() as u64).max(1);
 
         for i in 0..count {
             progress.check_cancelled()?;
             let time_secs = i as f64 * self.interval_secs;
-            decoder.seek_to(time_secs);
-            let frame = decoder
-                .next_frame()
-                .map_err(|e| AssetError::codec(e.to_string()))?
+            source.seek_to(time_secs);
+            let frame = source
+                .next_frame()?
                 .ok_or_else(|| AssetError::codec("video ended before expected duration"))?;
 
             let img = image::RgbaImage::from_raw(frame.width, frame.height, frame.data)

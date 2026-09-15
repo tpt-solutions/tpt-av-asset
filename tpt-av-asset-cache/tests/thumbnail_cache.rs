@@ -5,8 +5,8 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use tpt_av_asset_cache::{CacheStorage, ThumbnailCache, ThumbnailGenerator};
+use tpt_av_asset_test_media::{gradient_painter, write_proxy_video};
 use tpt_av_asset_utils::{AssetError, AssetId, ProgressReporter};
-use tpt_kinetix::{gradient_painter, write_test_video};
 
 fn temp_dir(name: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!(
@@ -29,8 +29,8 @@ fn generate_and_read_back_thumbnails() {
     storage.ensure_layout().unwrap();
 
     // 1.0 s @ 10 fps = 10 frames, 64x48.
-    let video = dir.join("clip.tkv");
-    write_test_video(&video, 64, 48, 10.0, 1.0, gradient_painter).unwrap();
+    let video = dir.join("clip.tkvp");
+    write_proxy_video(&video, 64, 48, 10.0, 10, gradient_painter).unwrap();
     let asset = AssetId::from_path(&video).unwrap();
 
     // Thumbnails every 0.25 s → 4 slots.
@@ -129,8 +129,8 @@ fn thumbnail_cancellation_leaves_partial_cache() {
     let dir = temp_dir("cancel");
     let storage = CacheStorage::new(dir.join("cache"));
 
-    let video = dir.join("clip.tkv");
-    write_test_video(&video, 32, 24, 10.0, 1.0, gradient_painter).unwrap();
+    let video = dir.join("clip.tkvp");
+    write_proxy_video(&video, 32, 24, 10.0, 10, gradient_painter).unwrap();
     let asset = AssetId::from_path(&video).unwrap();
 
     let mut cache = ThumbnailCache::create(asset, &storage, 0.1, (16, 12)).unwrap();

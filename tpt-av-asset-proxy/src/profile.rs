@@ -2,6 +2,13 @@
 
 use tpt_av_asset_utils::AssetError;
 
+/// The video codec video proxies are rendered with today (the only encoder
+/// in the kinetix stack).
+pub const VIDEO_CODEC: &str = "kinetix-lossless";
+/// The audio codec audio proxies target (written as PCM WAV until
+/// `tpt-cadence` ships its draft `Encoder`).
+pub const AUDIO_CODEC: &str = "flac";
+
 /// Proxy generation profile.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ProxyProfile {
@@ -11,11 +18,15 @@ pub struct ProxyProfile {
     pub resolution: (u32, u32),
     /// Target frame rate (`None` = same as source).
     pub frame_rate: Option<f64>,
-    /// Video codec (e.g., "h264", "prores_proxy"). Empty for audio-only.
+    /// Video codec. The only encoder in the kinetix stack today is
+    /// `tpt-kinetix-lossless`, so video proxies target it.
     pub video_codec: String,
-    /// Video bit rate in bits per second.
+    /// Video bit rate in bits per second (informational for the lossless
+    /// codec, which has no rate control).
     pub video_bit_rate: u64,
-    /// Audio codec (e.g., "aac", "flac").
+    /// Audio codec. FLAC is the intended target; `tpt-cadence` has not
+    /// shipped its draft `Encoder` yet, so audio proxies are currently
+    /// written as PCM WAV (see `audio_proxy`).
     pub audio_codec: String,
     /// Audio bit rate in bits per second (0 = lossless).
     pub audio_bit_rate: u64,
@@ -29,7 +40,7 @@ impl ProxyProfile {
             name: "1080p Low".to_string(),
             resolution: (1920, 1080),
             frame_rate: None,
-            video_codec: "h264".to_string(),
+            video_codec: VIDEO_CODEC.to_string(),
             video_bit_rate: 2_000_000,
             audio_codec: "aac".to_string(),
             audio_bit_rate: 128_000,
@@ -42,14 +53,15 @@ impl ProxyProfile {
             name: "720p Medium".to_string(),
             resolution: (1280, 720),
             frame_rate: None,
-            video_codec: "h264".to_string(),
+            video_codec: VIDEO_CODEC.to_string(),
             video_bit_rate: 5_000_000,
             audio_codec: "aac".to_string(),
             audio_bit_rate: 192_000,
         }
     }
 
-    /// Preset: audio-only proxy (WAV → FLAC with the real `tpt-cadence`).
+    /// Preset: audio-only proxy (WAV → FLAC once `tpt-cadence` ships its
+    /// draft `Encoder`; currently written as PCM WAV).
     pub fn audio_proxy_flac() -> Self {
         Self {
             name: "Audio Proxy (FLAC)".to_string(),
@@ -57,7 +69,7 @@ impl ProxyProfile {
             frame_rate: None,
             video_codec: String::new(),
             video_bit_rate: 0,
-            audio_codec: "flac".to_string(),
+            audio_codec: AUDIO_CODEC.to_string(),
             audio_bit_rate: 0,
         }
     }
@@ -67,17 +79,20 @@ impl ProxyProfile {
         self.resolution == (0, 0) || self.video_codec.is_empty()
     }
 
-    /// Canonical output file extension for this profile.
+    /// Canonical output file extension for this profile. Video proxies use
+    /// the TPT proxy stream (`.tkvp`); audio proxies use `.wav` until the
+    /// cadence FLAC encoder exists.
     pub fn output_extension(&self) -> &'static str {
         if self.is_audio_only() {
-            "flac"
+            "wav"
         } else {
-            "mp4"
+            "tkvp"
         }
     }
 
     /// Aspect-preserving target size for a source resolution: the largest
     /// `(w, h)` with even dimensions that fits inside `self.resolution`.
+    /// Never upscales.
     pub fn target_size(&self, source_width: u32, source_height: u32) -> (u32, u32) {
         let (max_w, max_h) = (
             u64::from(self.resolution.0.max(1)),
@@ -98,7 +113,7 @@ impl ProxyProfile {
     /// Validates the profile.
     ///
     /// # Errors
-    /// Returns [`AssetError::Validation`] for non-positive resolution on
+    /// Returns [`AssetError::Validation`] for a non-positive resolution on
     /// video profiles, non-positive bit rates, or an invalid frame rate.
     pub fn validate(&self) -> Result<(), AssetError> {
         if self.is_audio_only() {
@@ -117,6 +132,12 @@ impl ProxyProfile {
                 return Err(AssetError::validation(
                     "video proxy profile needs a video codec",
                 ));
+            }
+            if self.video_codec != VIDEO_CODEC {
+                return Err(AssetError::validation(format!(
+                    "unsupported video codec {}; only {VIDEO_CODEC} is encodable today",
+                    self.video_codec
+                )));
             }
             if self.video_bit_rate == 0 {
                 return Err(AssetError::validation(
@@ -144,7 +165,7 @@ mod tests {
         assert_eq!(low.video_bit_rate, 2_000_000);
         assert_eq!(low.audio_bit_rate, 128_000);
         assert!(!low.is_audio_only());
-        assert_eq!(low.output_extension(), "mp4");
+        assert_eq!(low.output_extension(), "tkvp");
 
         let medium = ProxyProfile::proxy_720p_medium();
         assert_eq!(medium.resolution, (1280, 720));
@@ -153,7 +174,7 @@ mod tests {
         let flac = ProxyProfile::audio_proxy_flac();
         assert!(flac.is_audio_only());
         assert_eq!(flac.audio_codec, "flac");
-        assert_eq!(flac.output_extension(), "flac");
+        assert_eq!(flac.output_extension(), "wav");
         assert!(flac.validate().is_ok());
         assert!(low.validate().is_ok());
         assert!(medium.validate().is_ok());
@@ -190,6 +211,10 @@ mod tests {
 
         let mut bad = ProxyProfile::proxy_1080p_low();
         bad.video_bit_rate = 0;
+        assert!(bad.validate().is_err());
+
+        let mut bad = ProxyProfile::proxy_1080p_low();
+        bad.video_codec = "h264".into(); // no H.264 encoder exists yet
         assert!(bad.validate().is_err());
     }
 }

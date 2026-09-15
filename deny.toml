@@ -38,4 +38,9 @@ yanked = "warn"
 unknown-registry = "deny"
 unknown-git = "deny"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
-allow-git = []
+# The sibling TPT ecosystem crates come from our own GitHub org until they
+# are published to crates.io (both are MIT OR Apache-2.0).
+allow-git = [
+    "https://github.com/tpt-solutions/tpt-cadence",
+    "https://github.com/tpt-solutions/tpt-kinetix",
+]

@@ -112,12 +112,14 @@ impl AssetImporter {
                     self.storage.clone(),
                     self.db.clone(),
                 )));
+                let audio_profile = tpt_av_asset_proxy::ProxyProfile::audio_proxy_flac();
                 jobs.push(Box::new(AudioProxyJob::new(
                     self.pipeline.next_job_id(),
                     info.id,
                     info.path.clone(),
-                    self.storage.proxy_path(info.id, "flac"),
-                    tpt_av_asset_proxy::ProxyProfile::audio_proxy_flac(),
+                    self.storage
+                        .proxy_path(info.id, audio_profile.output_extension()),
+                    audio_profile,
                     self.db.clone(),
                 )));
             }
@@ -131,12 +133,14 @@ impl AssetImporter {
                     self.storage.clone(),
                     self.db.clone(),
                 )));
+                let video_profile = tpt_av_asset_proxy::ProxyProfile::proxy_1080p_low();
                 jobs.push(Box::new(VideoProxyJob::new(
                     self.pipeline.next_job_id(),
                     info.id,
                     info.path.clone(),
-                    self.storage.proxy_path(info.id, "mp4"),
-                    tpt_av_asset_proxy::ProxyProfile::proxy_1080p_low(),
+                    self.storage
+                        .proxy_path(info.id, video_profile.output_extension()),
+                    video_profile,
                     self.db.clone(),
                 )));
             }
@@ -155,8 +159,10 @@ impl AssetImporter {
     }
 }
 
-/// Probes a media file's identity and metadata through the decoder traits,
-/// falling back to extension sniffing for still images.
+/// Probes a media file's identity and metadata through the real decoder
+/// stacks — kinetix (MP4/H.264 and TPT proxy streams) for video, cadence
+/// (WAV/FLAC) for audio — falling back to extension sniffing for still
+/// images.
 ///
 /// # Errors
 /// Returns [`AssetError::UnsupportedFormat`] when no decoder recognizes the
@@ -164,34 +170,23 @@ impl AssetImporter {
 pub fn probe_media_info(path: &Path) -> Result<MediaInfo, AssetError> {
     let id = AssetId::from_path(path)?;
 
-    if let Ok(decoder) = tpt_kinetix::open(path) {
-        let video = decoder.info().clone();
+    if let Ok(video) = tpt_av_asset_cache::video::probe_video(path) {
         let mut info = MediaInfo::new(id, path, MediaType::Video);
         info.duration_secs = Some(video.duration_secs);
-        info.video = Some(tpt_av_asset_utils::VideoInfo {
-            width: video.width,
-            height: video.height,
-            frame_rate: video.frame_rate,
-            codec: video.codec,
-            pixel_format: video.pixel_format,
-            bit_rate: video.bit_rate,
-            frame_count: video.frame_count,
-            duration_secs: video.duration_secs,
-        });
+        info.video = Some(video);
         return Ok(info);
     }
 
-    if let Ok(decoder) = tpt_cadence::open(path) {
-        let audio = decoder.info().clone();
+    if let Ok(audio) = tpt_av_asset_cache::audio::probe_audio(path) {
         let mut info = MediaInfo::new(id, path, MediaType::Audio);
-        info.duration_secs = Some(audio.duration_secs);
+        info.duration_secs = audio.duration_secs;
         info.audio = Some(tpt_av_asset_utils::AudioInfo {
             sample_rate: audio.sample_rate,
             channels: audio.channels,
             bit_depth: audio.bit_depth,
             codec: audio.codec,
-            bit_rate: audio.bit_rate,
-            duration_secs: audio.duration_secs,
+            bit_rate: None,
+            duration_secs: audio.duration_secs.unwrap_or(0.0),
         });
         return Ok(info);
     }

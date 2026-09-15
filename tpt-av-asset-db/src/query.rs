@@ -4,7 +4,7 @@
 use std::path::Path;
 
 use redb::ReadableTable;
-use tpt_av_asset_utils::{AssetError, AssetId, MediaInfo};
+use tpt_av_asset_utils::{AssetError, MediaInfo};
 
 use crate::asset_table::decode_media_info;
 use crate::transaction;
@@ -38,7 +38,7 @@ impl AssetDb {
     }
 
     /// Finds every asset registered at a file path — historical versions
-    /// included, since a modified file produces a new [`AssetId`] while the
+    /// included, since a modified file produces a new `AssetId` while the
     /// old row (and its caches) may still linger. Cache invalidation uses
     /// this to sweep stale versions too.
     ///

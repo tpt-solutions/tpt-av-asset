@@ -15,6 +15,7 @@ tpt-av-asset-utils.workspace = true
 tpt-av-asset-db.workspace = true
 tpt-av-asset-cache.workspace = true
 tpt-av-asset-proxy.workspace = true
-tpt-cadence.workspace = true
-tpt-kinetix.workspace = true
 log.workspace = true
+
+[dev-dependencies]
+tpt-av-asset-test-media.workspace = true

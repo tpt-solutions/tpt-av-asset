@@ -30,7 +30,7 @@ fn synthetic_wav(
     channels: u16,
 ) -> PathBuf {
     let path = dir.join(name);
-    tpt_cadence::write_test_wav(&path, duration, rate, channels).unwrap();
+    tpt_av_asset_test_media::write_test_wav(&path, duration, rate, channels).unwrap();
     path
 }
 

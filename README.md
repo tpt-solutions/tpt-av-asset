@@ -65,11 +65,13 @@ generator, or just the database.
 | [`tpt-cadence`](https://github.com/tpt-solutions/tpt-cadence) | Audio codecs (source of PCM data). |
 | `tpt-av-asset` | **Asset management (this repo).** |
 
-> **Early-stage note:** the `tpt-kinetix` / `tpt-cadence` integrations
-> currently build against local stand-in crates under [`stubs/`](stubs)
-> (see `todo.md`). They provide real WAV decode/encode and a synthetic video
-> container so the whole engine is testable today; they will be swapped for
-> the real git dependencies once those repositories are ready.
+> **Early-stage note:** `tpt-av-asset` builds against the real
+> [`tpt-kinetix`](https://github.com/tpt-solutions/tpt-kinetix) and
+> [`tpt-cadence`](https://github.com/tpt-solutions/tpt-cadence) git
+> dependencies. Both ecosystems are decode-only today, so video proxies are
+> rendered with `tpt-kinetix-lossless` into the TPT proxy stream (`.tkvp`)
+> and audio proxies are stored as PCM WAV (`.wav`) until the kinetix H.264
+> encoder and cadence FLAC encoder land — see `todo.md` "Deviations".
 
 ## Quick start
 
@@ -90,7 +92,7 @@ cargo run -p tpt-av-asset-examples --bin proxy_generator   # proxies for a folde
 └── cache/
     ├── waveforms/{asset_hash}.peaks
     ├── thumbnails/{asset_hash}/NNNNNN.jpg
-    └── proxies/{asset_hash}_proxy.mp4 | .flac
+    └── proxies/{asset_hash}_proxy.tkvp | .wav
 ```
 
 ## Contributing

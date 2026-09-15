@@ -1,0 +1,15 @@
+[package]
+name = "tpt-av-asset-test-media"
+description = "Synthetic test-media helpers for the TPT AV asset stack (WAV writer, proxy-stream video fixtures, ffmpeg-gated H.264 fixtures)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+keywords = ["media", "audio", "video", "test"]
+categories = ["multimedia", "development-tools"]
+
+[dependencies]
+tpt-av-asset-cache.workspace = true
+tpt-kinetix-mux.workspace = true

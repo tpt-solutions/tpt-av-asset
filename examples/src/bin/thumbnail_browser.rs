@@ -29,7 +29,7 @@ fn run() -> Result<(), AssetError> {
     let video = match std::env::args().nth(1) {
         Some(path) => tpt_av_asset_examples::ensure_demo_media(std::path::Path::new(&path))?,
         None => tpt_av_asset_examples::ensure_demo_media(
-            &std::path::PathBuf::from("demo").join("demo_clip.tkv"),
+            &std::path::PathBuf::from("demo").join("demo_clip.tkvp"),
         )?,
     };
     let asset = AssetId::from_path(&video)?;

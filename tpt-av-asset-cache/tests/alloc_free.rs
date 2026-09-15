@@ -58,7 +58,7 @@ fn read_chunk_and_read_range_into_allocate_nothing() {
 
     // Build a cache from a synthetic WAV (allocation is fine here).
     let wav = dir.join("tone.wav");
-    tpt_cadence::write_test_wav(&wav, 1.0, 8_000, 1).unwrap();
+    tpt_av_asset_test_media::write_test_wav(&wav, 1.0, 8_000, 1).unwrap();
     let mut cache = WaveformCache::open(asset, &storage).unwrap();
     let generator = WaveformGenerator::new(512, 8_000);
     generator

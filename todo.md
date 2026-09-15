@@ -2,19 +2,44 @@
 
 Source of truth for API shapes, architecture, and rationale: [`spec.txt`](spec.txt).
 
-**Status (2026-09-16):** Phases 0–7 implemented locally. 84 tests green;
-`cargo fmt` / `clippy -D warnings` / `cargo doc -D warnings` / `cargo deny
-check` all clean; all four examples run end-to-end. Remaining items are the
-GitHub-side tasks (no `gh` credentials on this machine) and the steps that
-are blocked on the real `tpt-kinetix` / `tpt-cadence` repositories.
+**Status (2026-09-16):** Phases 0–7 implemented; the real `tpt-kinetix` /
+`tpt-cadence` git dependencies are integrated (stubs removed). 86 tests
+green; `cargo fmt` / `clippy -D warnings` / `cargo doc -D warnings` /
+`cargo deny check` all clean; all four examples run end-to-end against the
+real decoders. Remaining items are the GitHub-side tasks (no `gh`
+credentials on this machine) and crates.io publishing.
 
 **Deviations from `spec.txt` tracked here:**
 - **License:** dual-licensed **MIT OR Apache-2.0** (not MIT-only as spec.txt states). Author/owner: TPT Solutions.
-- **External deps:** `tpt-kinetix` (video) and `tpt-cadence` (audio) don't exist yet. Early phases build against local stub/trait abstractions under [`stubs/`](stubs) (workspace members, `publish = false`); real git dependencies get swapped in once those repos are ready (see Phase 7). The stubs provide a real PCM WAV decoder/encoder and a synthetic `TKV1` RGBA video container, so the whole engine is testable today.
-- **`examples/` is a seventh workspace member** (`tpt-av-asset-examples`, `publish = false`) so the four demo binaries build with plain `cargo`; the six core crates remain the publishable set.
-- **`Priority` variants are declared `Low → Critical`** so the derived `Ord` ranks Critical highest (spec.txt declared Critical first, which would invert `Ord`).
-- **Audio proxy encoding:** the stand-in `tpt-cadence` writes 16-bit PCM WAV bytes into the `.flac`-named proxy output; real FLAC arrives with the real crate.
-- **`deny.toml`:** with cargo-deny 0.20 the license allow-list *is* the policy (explicit `deny`/`copyleft` license keys were removed upstream); `Unicode-3.0`/`Unicode-DFS-2016` were added for `unicode-ident`'s data files.
+- **External deps:** the real `tpt-kinetix` and `tpt-cadence` are now git
+  dependencies (allow-listed in `deny.toml`). Both are decode-only today,
+  which forces these interim strategies:
+  - **Video proxies** render with `tpt-kinetix-lossless` (the only encoder
+    in the kinetix stack) into the TPT proxy stream container (`.tkvp`,
+    defined in `tpt-av-asset-cache::container`). H.264 proxy presets become
+    possible once an H.264 encoder exists.
+  - **Audio proxies** decode via `tpt-cadence` (WAV/FLAC) and are written as
+    16-bit PCM **WAV** (`.wav`), because the cadence `Encoder` trait is
+    still a draft. The `audio_proxy_flac()` preset stays; its output flips
+    to real FLAC when the encoder lands.
+  - **MP4 sources** must carry SPS/PPS in-band: the kinetix MP4 demuxer does
+    not yet surface `avcC` extradata. Files muxed by
+    `tpt-av-asset-test-media::mux_annexb_to_mp4` repeat parameter sets in
+    every keyframe.
+- **`tpt-av-asset-test-media`** is a seventh workspace member (publishable,
+  like kinetix's and cadence's own test-utils crates): it writes synthetic
+  WAV/proxy-stream fixtures and, ffmpeg-permitting, real H.264-in-MP4 clips.
+  The H.264 path tests skip when ffmpeg is absent — the same convention the
+  kinetix conformance suites use.
+- **`examples/` is an eighth workspace member** (`tpt-av-asset-examples`,
+  `publish = false`) so the four demo binaries build with plain `cargo`.
+- **`Priority` variants are declared `Low → Critical`** so the derived `Ord`
+  ranks Critical highest (spec.txt declared Critical first, which would
+  invert `Ord`).
+- **`deny.toml`:** with cargo-deny 0.20 the license allow-list *is* the
+  policy (explicit `deny`/`copyleft` license keys were removed upstream);
+  `Unicode-3.0`/`Unicode-DFS-2016` were added for `unicode-ident`'s data
+  files, and the two `tpt-solutions` git sources are allow-listed.
 
 ---
 
@@ -145,5 +170,5 @@ are blocked on the real `tpt-kinetix` / `tpt-cadence` repositories.
 - [ ] Swap stub `tpt-kinetix`/`tpt-cadence` traits for the real git dependencies once those repos are ready; re-run full test/integration suite against real decoders *(blocked: repos don't exist yet)*
 - [ ] Cross-platform CI green on Linux/macOS/Windows *(workflow committed; needs the GitHub remote)*
 - [x] Tag `v0.1.0` *(tagged locally on the release commit; push with the repo)*
-- [x] Dry-run packaging for each of the 6 crates in dependency order (`cargo package`: utils verified; db+ resolve against the registry only after the preceding crate is actually published)
-- [ ] Publish crates to crates.io in dependency order (utils → db → cache → proxy → watcher → pipeline) *(blocked: needs crates.io token, published `tpt-kinetix`/`tpt-cadence`, and the preceding crates in the index)*
+- [x] Dry-run packaging for each of the crates in dependency order (`cargo package`: utils verified; db+ resolve against the registry only after the preceding crate is actually published; order is utils → db → cache → test-media → proxy → watcher → pipeline)
+- [ ] Publish crates to crates.io in dependency order (utils → db → cache → test-media → proxy → watcher → pipeline) *(blocked: needs a crates.io token; git dependencies on the sibling TPT repos are fine)*

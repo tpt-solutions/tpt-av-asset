@@ -49,14 +49,20 @@ pub fn ensure_demo_media(path: &Path) -> Result<PathBuf, AssetError> {
     }
 
     match extension.as_str() {
-        "tkv" => {
-            tpt_kinetix::write_test_video(path, 320, 180, 24.0, 2.0, tpt_kinetix::gradient_painter)
-                .map_err(|e| AssetError::codec(e.to_string()))?;
+        "tkvp" => {
+            tpt_av_asset_test_media::write_proxy_video(
+                path,
+                320,
+                180,
+                24.0,
+                48,
+                tpt_av_asset_test_media::gradient_painter,
+            )
+            .map_err(AssetError::codec)?;
             println!("synthesized demo video: {}", path.display());
         }
         _ => {
-            tpt_cadence::write_test_wav(path, 5.0, 44_100, 1)
-                .map_err(|e| AssetError::codec(e.to_string()))?;
+            tpt_av_asset_test_media::write_test_wav(path, 5.0, 44_100, 1)?;
             println!("synthesized demo audio: {}", path.display());
         }
     }

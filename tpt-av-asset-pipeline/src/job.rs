@@ -35,8 +35,5 @@ pub trait Job: Send {
     /// # Errors
     /// Returns [`AssetError::Cancelled`] when cancelled through the
     /// progress reporter, or any other [`AssetError`] on failure.
-    fn execute(
-        &mut self,
-        progress: &ProgressReporter,
-    ) -> Result<(), AssetError>;
+    fn execute(&mut self, progress: &ProgressReporter) -> Result<(), AssetError>;
 }

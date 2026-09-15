@@ -7,10 +7,10 @@ members = [
     "tpt-av-asset-proxy",
     "tpt-av-asset-watcher",
     "tpt-av-asset-pipeline",
-    # Local stand-ins for the real `tpt-kinetix` / `tpt-cadence` git dependencies
-    # until those repositories are ready (see todo.md "Deviations", Phase 7).
-    "stubs/tpt-kinetix",
-    "stubs/tpt-cadence",
+    # Synthetic test-media helpers (WAV writer, video fixtures); also used by
+    # the demo binaries. Publishable per ecosystem convention (kinetix and
+    # cadence ship test-utils crates the same way).
+    "test-support/tpt-av-asset-test-media",
     # Demo binaries (publish = false).
     "examples",
 ]
@@ -30,10 +30,18 @@ tpt-av-asset-cache = { path = "tpt-av-asset-cache", version = "0.1.0" }
 tpt-av-asset-proxy = { path = "tpt-av-asset-proxy", version = "0.1.0" }
 tpt-av-asset-watcher = { path = "tpt-av-asset-watcher", version = "0.1.0" }
 tpt-av-asset-pipeline = { path = "tpt-av-asset-pipeline", version = "0.1.0" }
-# Placeholder stand-ins for the real ecosystem crates; swap for
-# `git = "https://github.com/tpt-solutions/..."` once those repos exist.
-tpt-kinetix = { path = "stubs/tpt-kinetix", version = "0.1.0" }
-tpt-cadence = { path = "stubs/tpt-cadence", version = "0.1.0" }
+tpt-av-asset-test-media = { path = "test-support/tpt-av-asset-test-media", version = "0.1.0" }
+# Real ecosystem crates. `tpt-cadence` currently ships decoders only (its
+# `Encoder` trait is a draft) and `tpt-kinetix` has no H.264 encoder yet, so
+# see todo.md "Deviations" for the interim proxy/audio strategies.
+tpt-av-cadence-core = { git = "https://github.com/tpt-solutions/tpt-cadence" }
+tpt-av-cadence-wav = { git = "https://github.com/tpt-solutions/tpt-cadence" }
+tpt-av-cadence-flac = { git = "https://github.com/tpt-solutions/tpt-cadence" }
+tpt-kinetix-core = { git = "https://github.com/tpt-solutions/tpt-kinetix" }
+tpt-kinetix-demux = { git = "https://github.com/tpt-solutions/tpt-kinetix" }
+tpt-kinetix-h264 = { git = "https://github.com/tpt-solutions/tpt-kinetix" }
+tpt-kinetix-lossless = { git = "https://github.com/tpt-solutions/tpt-kinetix" }
+tpt-kinetix-mux = { git = "https://github.com/tpt-solutions/tpt-kinetix" }
 redb = "2.1"
 notify = "6.1"
 image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }

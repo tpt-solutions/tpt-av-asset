@@ -4,7 +4,7 @@
 //!
 //! | Table | Key | Value |
 //! | :--- | :--- | :--- |
-//! | `assets` | 24-byte [`AssetId`] triple | encoded [`MediaInfo`] |
+//! | `assets` | 24-byte `AssetId` triple | encoded `MediaInfo` |
 //! | `cache_entries` | asset key + [`CacheType`] tag | cache file path |
 //! | `jobs` | `u64` job id | encoded [`JobRecord`] |
 //!
@@ -30,7 +30,7 @@ pub use cache_table::CacheType;
 pub use job_table::{JobRecord, JobState};
 pub use schema::{asset_key, cache_key};
 
-use tpt_av_asset_utils::{AssetError, AssetId, MediaInfo};
+use tpt_av_asset_utils::AssetError;
 
 /// The embedded media database.
 ///

@@ -10,8 +10,8 @@ Author/owner: TPT Solutions.
 > This document is the design-of-record. The original specification lives in
 > [`spec.txt`](spec.txt); where the two differ, this file and
 > [`todo.md`](todo.md) (see "Deviations") are authoritative — notably the
-> dual MIT/Apache-2.0 licensing and the local stand-in crates for
-> `tpt-kinetix`/`tpt-cadence`.
+> dual MIT/Apache-2.0 licensing and the interim decode-only integration
+> strategy for the real `tpt-kinetix`/`tpt-cadence` crates.
 
 ## 1. Vision & Philosophy
 
@@ -154,12 +154,15 @@ crate, and encodes JPEG.
 
 ### 4.5 Proxy generation (`tpt-av-asset-proxy`)
 
-`ProxyProfile` presets: `proxy_1080p_low` (1920×1080, low bitrate),
-`proxy_720p_medium` (1280×720), `audio_proxy_flac` (lossless audio). The
-proxy engine decodes frames/PCM, aspect-preserving-resizes, and re-encodes
-through the `tpt-kinetix`/`tpt-cadence` encode traits. Progress reporting
-and cooperative cancellation are wired through `ProgressReporter`; a
-cancelled run deletes its partial output file.
+`ProxyProfile` presets: `proxy_1080p_low` (1920×1080),
+`proxy_720p_medium` (1280×720), `audio_proxy_flac`. Video proxies decode
+through the kinetix stack (MP4/H.264 or the TPT proxy stream), aspect-fit
+into the target resolution, and re-encode with `tpt-kinetix-lossless` —
+the only encoder in the kinetix stack today — into `.tkvp` files. Audio
+proxies decode through the cadence readers and are stored as 16-bit PCM
+WAV until the cadence `Encoder` trait ships FLAC. Progress reporting and
+cooperative cancellation are wired through `ProgressReporter`; a cancelled
+run deletes its partial output file.
 
 ### 4.6 Filesystem watcher (`tpt-av-asset-watcher`)
 
@@ -221,7 +224,7 @@ Level 3: source file (decode on demand)              — only on cache miss
 └── cache/
     ├── waveforms/{asset_id_hash}.peaks
     ├── thumbnails/{asset_id_hash}/NNNNNN.jpg
-    └── proxies/{asset_id_hash}_proxy.mp4 | .flac
+    └── proxies/{asset_id_hash}_proxy.tkvp | .wav
 └── logs/pipeline.log
 ```
 
@@ -230,9 +233,10 @@ file addresses a fresh cache namespace automatically.
 
 ## 6. Dependency & licensing rules
 
-Allowed: workspace crates, `tpt-kinetix` (MIT), `tpt-cadence` (MIT), `redb`
+Allowed: workspace crates, the sibling ecosystem git dependencies
+(`tpt-kinetix`, `tpt-cadence`, both MIT/Apache-2.0), `redb`
 (MIT/Apache-2.0), `notify` (MIT/Apache-2.0), `image` (MIT/Apache-2.0),
-`log` (MIT/Apache-2.0).
+`log` (MIT/Apache-2.0). Git sources are allow-listed in `deny.toml`.
 
 Banned: `sqlite3-sys` and other C-based stores, `ffmpeg-sys`/`ffmpeg-next`,
 and any crate pulling GPL/LGPL/AGPL/MPL into the tree. Enforced by

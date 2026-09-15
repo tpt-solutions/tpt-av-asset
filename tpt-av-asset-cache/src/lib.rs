@@ -15,14 +15,21 @@
 //! reporting, cooperative cancellation, and resumable partial progress.
 //! [`invalidate_asset`] ties invalidation into `tpt-av-asset-db`.
 
+pub mod audio;
+pub mod container;
+pub use container::{planes_to_rgba, rgba_to_planes};
+pub mod error_map;
 pub mod invalidation;
 pub mod reader;
 pub mod storage;
 pub mod thumbnail;
+pub mod video;
 pub mod waveform;
 
+pub use audio::{open_audio, AudioStream, AudioStreamInfo};
 pub use invalidation::invalidate_asset;
 pub use reader::WaveformReader;
 pub use storage::CacheStorage;
 pub use thumbnail::{Thumbnail, ThumbnailCache, ThumbnailGenerator};
+pub use video::{open_video, probe_video, RgbaFrame, VideoSource};
 pub use waveform::{WaveformCache, WaveformChunk, WaveformGenerator};
