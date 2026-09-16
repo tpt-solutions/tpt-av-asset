@@ -167,8 +167,43 @@ credentials on this machine) and crates.io publishing.
 - [x] `examples/proxy_generator.rs` — generate proxies for a folder of videos
 - [x] Finalize `README.md` / `DESIGN.md` with accurate dual-license badges and crate table
 - [x] Add rustdoc comments across public APIs; verify `cargo doc` builds cleanly (`RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --workspace`)
-- [ ] Swap stub `tpt-kinetix`/`tpt-cadence` traits for the real git dependencies once those repos are ready; re-run full test/integration suite against real decoders *(blocked: repos don't exist yet)*
+- [x] Swap stub `tpt-kinetix`/`tpt-cadence` traits for the real git dependencies; re-ran full test/integration suite against real decoders
 - [ ] Cross-platform CI green on Linux/macOS/Windows *(workflow committed; needs the GitHub remote)*
 - [x] Tag `v0.1.0` *(tagged locally on the release commit; push with the repo)*
 - [x] Dry-run packaging for each of the crates in dependency order (`cargo package`: utils verified; db+ resolve against the registry only after the preceding crate is actually published; order is utils → db → cache → test-media → proxy → watcher → pipeline)
 - [ ] Publish crates to crates.io in dependency order (utils → db → cache → test-media → proxy → watcher → pipeline) *(blocked: needs a crates.io token; git dependencies on the sibling TPT repos are fine)*
+
+---
+
+### Phase 8 — Security Hardening & Adoption Tooling (2026-09-16 review)
+
+**Docs cleanup**
+- [ ] `CONTRIBUTING.md:62` — replace stale "stub crates" reference with the real `tpt-av-asset-test-media` crate / real kinetix-cadence dependencies
+- [ ] `DESIGN.md:250` — same fix ("stub crates (WAV, TKV)" → test-media crate)
+
+**Supply-chain hardening**
+- [ ] Pin `rev = "<commit>"` on each `tpt-av-cadence-*` / `tpt-kinetix-*` git dependency in root `Cargo.toml`, matching the commits currently locked in `Cargo.lock` (`tpt-cadence` → `72794ef2a270a538efc4bfa24b6f9de96e1df05e`, `tpt-kinetix` → `9747a2b17c77479377f69ad2f2621e1ed674b518`)
+
+**DoS fixes in `.tkvp` parsing (`tpt-av-asset-cache/src/video.rs`)**
+- [ ] Bound `header.frame_count`-driven `Vec::with_capacity` (`video.rs:344`) against remaining file size before allocating
+- [ ] Bound per-frame `len`-driven `vec![0u8; len]` (`video.rs:387`) against remaining file size before allocating
+- [ ] Add regression test(s) with a crafted malformed `.tkvp` (absurd `frame_count`/`len`) asserting fast `Err` instead of a huge allocation attempt
+
+**Security posture**
+- [ ] Add root `SECURITY.md` (scope, supported versions, vulnerability reporting process, hardening notes)
+
+**Fuzzing**
+- [ ] Add `fuzz/` (`cargo fuzz init`) with a target fuzzing `tpt_av_asset_cache::container::Header::parse` / `ProxyStreamSource::open`
+- [ ] Add a second fuzz target for the `tpt-av-asset-db` hand-rolled binary decode path (`schema.rs`/`asset_table.rs`/`job_table.rs`)
+- [ ] Document how to run fuzz targets in `CONTRIBUTING.md`
+- [ ] Add an optional/non-blocking short smoke-fuzz CI job (Linux only)
+
+**Adoption: CLI**
+- [ ] Add new `tpt-av-asset-cli` workspace member (binary crate, `publish = true`) using `clap` derive
+- [ ] Subcommands: `import`, `waveform`, `thumbnail`, `proxy`, `watch` (reusing logic from `examples/src/bin/*`)
+- [ ] Update `README.md` with a CLI section / install instructions; keep `examples/` as library-usage documentation
+- [ ] Add `SECURITY.md` pointers from `README.md` and `CONTRIBUTING.md`
+
+**Verification**
+- [ ] `cargo build --workspace --all-targets` / `cargo test --workspace` green after all changes above
+- [ ] `cargo clippy --workspace --all-targets -- -D warnings`, `cargo fmt --check`, `cargo deny check` (covers new `clap` dep and `fuzz/` member)
