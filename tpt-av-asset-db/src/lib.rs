@@ -27,6 +27,7 @@ use std::sync::Arc;
 
 pub use asset_table::{decode_media_info, encode_media_info};
 pub use cache_table::CacheType;
+pub use job_table::decode_job_record;
 pub use job_table::{JobRecord, JobState};
 pub use schema::{asset_key, cache_key};
 

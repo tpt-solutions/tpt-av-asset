@@ -84,6 +84,25 @@ cargo run -p tpt-av-asset-examples --bin thumbnail_browser # list cached thumbna
 cargo run -p tpt-av-asset-examples --bin proxy_generator   # proxies for a folder
 ```
 
+(The examples are library-usage documentation; they synthesize demo media
+and work inside the current directory.)
+
+## Command-line interface
+
+The [`tpt-av-asset-cli`](tpt-av-asset-cli) crate ships the `tpt-av-asset`
+binary against the real engine home (`~/.tpt-av-asset`, override with
+`TPT_AV_ASSET_HOME`):
+
+```sh
+cargo install tpt-av-asset-cli          # once published; or: cargo install --path tpt-av-asset-cli
+
+tpt-av-asset import recording.wav       # index + generate waveform/proxy caches
+tpt-av-asset waveform recording.wav     # ASCII-render the cached peaks
+tpt-av-asset thumbnail clip.mp4         # generate + list thumbnails
+tpt-av-asset proxy footage/             # proxies for every media file in a folder
+tpt-av-asset watch footage/             # watch and drop stale caches on change
+```
+
 ## On-disk layout
 
 ```text

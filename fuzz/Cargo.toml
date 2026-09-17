@@ -1,0 +1,33 @@
+[package]
+name = "tpt-av-asset-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+tpt-av-asset-cache = { path = "../tpt-av-asset-cache" }
+tpt-av-asset-db = { path = "../tpt-av-asset-db" }
+tpt-av-asset-utils = { path = "../tpt-av-asset-utils" }
+tpt-kinetix-lossless = { git = "https://github.com/tpt-solutions/tpt-kinetix", rev = "9747a2b17c77479377f69ad2f2621e1ed674b518" }
+
+# Prevent this from interfering with the parent workspace.
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "proxy_stream_container"
+path = "fuzz_targets/proxy_stream_container.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "db_row_codec"
+path = "fuzz_targets/db_row_codec.rs"
+test = false
+doc = false
+bench = false

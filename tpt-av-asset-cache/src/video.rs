@@ -346,39 +346,12 @@ impl ProxyStreamSource {
                 path.display()
             )));
         }
-        let remaining = file_len - container::HEADER_LEN;
-
-        // Single sequential scan builds the frame offset table. The declared
-        // frame_count is attacker-controlled, so the table's pre-allocation
-        // is bounded by the bytes actually available (one table entry needs
-        // at least a 4-byte length prefix of real file to be meaningful).
-        let mut offsets = Vec::with_capacity(
-            usize::try_from(header.frame_count.min((remaining / 4) as u32)).unwrap_or(0),
-        );
-        let mut cursor = container::HEADER_LEN;
-        loop {
-            let mut len_bytes = [0u8; 4];
-            if file.read_exact(&mut len_bytes).is_err() {
-                break;
-            }
-            let len = u32::from_le_bytes(len_bytes) as u64;
-            cursor += 4;
-            // Reject payloads claiming bytes beyond the file. This both stops
-            // the scan at truncation and bounds the per-frame allocation in
-            // `decode_at` by the real file size.
-            if len > file_len - cursor {
-                log::debug!(
-                    "proxy stream {}: frame table overruns the file at offset {cursor}; \
-                     keeping the {} frame(s) before it",
-                    path.display(),
-                    offsets.len()
-                );
-                break;
-            }
-            offsets.push((cursor, len));
-            cursor += len;
-            file.seek(SeekFrom::Start(cursor))?;
-        }
+        // Sequential scan builds the frame offset table. The declared
+        // frame_count and per-frame lengths are attacker-controlled; the
+        // shared scan bounds its allocations by the real file size and
+        // degrades to the valid prefix on truncation, which in turn bounds
+        // every per-frame allocation in `decode_at`.
+        let offsets = container::scan_frame_table(&mut file, file_len, header.frame_count);
 
         let sequence = header.sequence();
         let info = VideoInfo {

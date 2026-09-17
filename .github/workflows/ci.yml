@@ -52,3 +52,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: EmbarkStudios/cargo-deny-action@v1
+
+  # Non-blocking smoke fuzz: a short run per target to catch obvious parser
+  # regressions. Full sessions are local (see CONTRIBUTING.md #fuzzing).
+  smoke-fuzz:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz --locked
+      - name: Smoke fuzz proxy_stream_container
+        run: cargo fuzz run proxy_stream_container -- -max_total_time=30 -rss_limit_mb=4096
+      - name: Smoke fuzz db_row_codec
+        run: cargo fuzz run db_row_codec -- -max_total_time=30 -rss_limit_mb=4096

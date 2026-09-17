@@ -1,0 +1,24 @@
+[package]
+name = "tpt-av-asset-cli"
+description = "Command-line interface for the TPT AV asset engine: import media, render waveforms/thumbnails/proxies, watch folders"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+keywords = ["media", "audio", "video", "cli", "asset"]
+categories = ["multimedia", "command-line-utilities"]
+
+[[bin]]
+name = "tpt-av-asset"
+path = "src/main.rs"
+
+[dependencies]
+tpt-av-asset-cache.workspace = true
+tpt-av-asset-db.workspace = true
+tpt-av-asset-pipeline.workspace = true
+tpt-av-asset-proxy.workspace = true
+tpt-av-asset-utils.workspace = true
+tpt-av-asset-watcher.workspace = true
+clap.workspace = true

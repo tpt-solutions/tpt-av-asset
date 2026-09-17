@@ -292,8 +292,13 @@ pub fn planes_to_rgba(planes: &[Plane], width: u32, height: u32) -> Result<Vec<u
     Ok(rgba)
 }
 
-/// Decodes a single frame payload (used by [`crate::video::ProxyStreamSource`]).
-pub(crate) fn decode_payload(
+/// Decodes a single encoded frame payload into RGBA8 (shared by
+/// the proxy-stream video source and the fuzz targets).
+///
+/// # Errors
+/// Returns [`AssetError::Codec`] when the payload does not decode or the
+/// plane set is malformed.
+pub fn decode_payload(
     decoder: &mut LosslessDecoder,
     sequence: &SequenceHeader,
     payload: &[u8],
@@ -304,6 +309,48 @@ pub(crate) fn decode_payload(
         .decode_frame(sequence, payload)
         .map_err(error_map::codec)?;
     planes_to_rgba(&planes, width, height)
+}
+
+/// Walks the frame table of a proxy stream, returning `(offset, len)` per
+/// frame, stopping at the first entry whose payload would overrun
+/// `file_len` (a truncated or hostile tail degrades to the valid prefix).
+///
+/// The scan performs one positioned 4-byte read per frame; payloads are
+/// skipped, never buffered, so a hostile `len` costs a seek — not an
+/// allocation.
+#[must_use]
+pub fn scan_frame_table(
+    reader: &mut (impl std::io::Read + std::io::Seek),
+    file_len: u64,
+    max_declared_frames: u32,
+) -> Vec<(u64, u64)> {
+    // The table's pre-allocation is bounded by the bytes actually available:
+    // one entry needs at least a 4-byte length prefix of real file.
+    let bound = file_len.saturating_sub(HEADER_LEN) / 4;
+    let mut offsets =
+        Vec::with_capacity(usize::try_from(max_declared_frames.min(bound as u32)).unwrap_or(0));
+    let mut cursor = HEADER_LEN;
+    loop {
+        let mut len_bytes = [0u8; 4];
+        if reader.read_exact(&mut len_bytes).is_err() {
+            break;
+        }
+        let len = u32::from_le_bytes(len_bytes) as u64;
+        cursor += 4;
+        if len > file_len.saturating_sub(cursor) {
+            log::debug!(
+                "proxy stream: frame table overruns the file at offset {cursor}; keeping the {} frame(s) before it",
+                offsets.len()
+            );
+            break;
+        }
+        offsets.push((cursor, len));
+        cursor += len;
+        if reader.seek(std::io::SeekFrom::Start(cursor)).is_err() {
+            break;
+        }
+    }
+    offsets
 }
 
 #[cfg(test)]

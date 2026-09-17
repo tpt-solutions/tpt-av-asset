@@ -7,6 +7,7 @@ members = [
     "tpt-av-asset-proxy",
     "tpt-av-asset-watcher",
     "tpt-av-asset-pipeline",
+    "tpt-av-asset-cli",
     # Synthetic test-media helpers (WAV writer, video fixtures); also used by
     # the demo binaries. Publishable per ecosystem convention (kinetix and
     # cadence ship test-utils crates the same way).
@@ -30,6 +31,7 @@ tpt-av-asset-cache = { path = "tpt-av-asset-cache", version = "0.1.0" }
 tpt-av-asset-proxy = { path = "tpt-av-asset-proxy", version = "0.1.0" }
 tpt-av-asset-watcher = { path = "tpt-av-asset-watcher", version = "0.1.0" }
 tpt-av-asset-pipeline = { path = "tpt-av-asset-pipeline", version = "0.1.0" }
+tpt-av-asset-cli = { path = "tpt-av-asset-cli", version = "0.1.0" }
 tpt-av-asset-test-media = { path = "test-support/tpt-av-asset-test-media", version = "0.1.0" }
 # Real ecosystem crates. `tpt-cadence` currently ships decoders only (its
 # `Encoder` trait is a draft) and `tpt-kinetix` has no H.264 encoder yet, so
@@ -46,3 +48,4 @@ redb = "2.1"
 notify = "6.1"
 image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
 log = "0.4"
+clap = { version = "4.5", features = ["derive"] }
