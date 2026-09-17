@@ -2,12 +2,15 @@
 
 Source of truth for API shapes, architecture, and rationale: [`spec.txt`](spec.txt).
 
-**Status (2026-09-16):** Phases 0–7 implemented; the real `tpt-kinetix` /
-`tpt-cadence` git dependencies are integrated (stubs removed). 86 tests
+**Status (2026-09-17):** Phases 0–7 implemented; the real `tpt-kinetix` /
+`tpt-cadence` git dependencies are integrated (stubs removed). 90 tests
 green; `cargo fmt` / `clippy -D warnings` / `cargo doc -D warnings` /
 `cargo deny check` all clean; all four examples run end-to-end against the
-real decoders. Remaining items are the GitHub-side tasks (no `gh`
-credentials on this machine) and crates.io publishing.
+real decoders. Phase 8's docs cleanup, git dependency pinning, and the
+`.tkvp` DoS hardening (bounded allocations + regression tests) are done.
+Remaining items are the GitHub-side tasks (no `gh` credentials on this
+machine), crates.io publishing, and the rest of Phase 8 (`SECURITY.md`,
+fuzzing, CLI).
 
 **Deviations from `spec.txt` tracked here:**
 - **License:** dual-licensed **MIT OR Apache-2.0** (not MIT-only as spec.txt states). Author/owner: TPT Solutions.
@@ -100,7 +103,7 @@ credentials on this machine) and crates.io publishing.
 - [x] `waveform.rs` — `WaveformCache`, `WaveformChunk` (min/max/RMS), `open`/`write_chunk`/`read_chunk`/`read_range`/`chunk_count`
 - [x] `reader.rs` — real-time safe read path (allocation-free, lock-free positioned reads); documented and test-verified
 - [x] `invalidation.rs` — cache invalidation logic tied into `tpt-av-asset-db`
-- [x] `WaveformGenerator::new` + `generate()` implemented against the `tpt-cadence` stub trait (reads PCM, computes min/max/RMS per chunk, writes to cache, reports progress)
+- [x] `WaveformGenerator::new` + `generate()` implemented against the real `tpt-cadence` readers (reads PCM frames, computes min/max/RMS per chunk, writes to cache, reports progress)
 - [x] Benchmark/test proving `read_chunk`/`read_range_into` make no heap allocations (global-allocator counting harness in `tests/alloc_free.rs`; `read_range` is the allocating convenience variant)
 - [x] Integration tests: generate + read back waveform peaks for a synthetic/test WAV file
 
@@ -111,15 +114,15 @@ credentials on this machine) and crates.io publishing.
 - [x] `thumbnail.rs` — `ThumbnailCache`, `Thumbnail`, `open`/`write_thumbnail`/`read_thumbnail`/`read_nearest`/`thumbnail_count`
 - [x] Cache storage layout: `cache/thumbnails/{asset_id_hash}/NNNNNN.jpg` (+ `meta` sidecar)
 - [x] Add `image` crate dependency for resizing/compression
-- [x] `ThumbnailGenerator::new` + `generate()` implemented against the `tpt-kinetix` stub trait (decode frames at interval, resize, write to cache, report progress)
-- [x] Integration tests: generate + read back thumbnails for a synthetic/test video source (via stub)
+- [x] `ThumbnailGenerator::new` + `generate()` implemented against the real kinetix decode stack (decode frames at interval, resize, write to cache, report progress)
+- [x] Integration tests: generate + read back thumbnails for a synthetic/test video source (proxy-stream fixture; H.264/MP4 path ffmpeg-gated)
 
 ---
 
 ### Phase 4 — Proxy Generation
 
 - [x] `profile.rs` — `ProxyProfile` + presets: `proxy_1080p_low()`, `proxy_720p_medium()`, `audio_proxy_flac()`
-- [x] `encoder.rs` — lightweight encoder wrapper (wraps `tpt-kinetix` stub for now)
+- [x] `encoder.rs` — lightweight encoder wrapper (wraps the proxy-stream container writer over `tpt-kinetix-lossless`)
 - [x] `video_proxy.rs` — video proxy generation (decode → resize → re-encode → write)
 - [x] `audio_proxy.rs` — audio proxy generation (decode PCM → re-encode → write)
 - [x] `generator.rs` — high-level `ProxyGenerator` (`generate_video_proxy`, `generate_audio_proxy`)
@@ -178,16 +181,16 @@ credentials on this machine) and crates.io publishing.
 ### Phase 8 — Security Hardening & Adoption Tooling (2026-09-16 review)
 
 **Docs cleanup**
-- [ ] `CONTRIBUTING.md:62` — replace stale "stub crates" reference with the real `tpt-av-asset-test-media` crate / real kinetix-cadence dependencies
-- [ ] `DESIGN.md:250` — same fix ("stub crates (WAV, TKV)" → test-media crate)
+- [x] `CONTRIBUTING.md:62` — replace stale "stub crates" reference with the real `tpt-av-asset-test-media` crate / real kinetix-cadence dependencies
+- [x] `DESIGN.md:250` — same fix ("stub crates (WAV, TKV)" → test-media crate)
 
 **Supply-chain hardening**
-- [ ] Pin `rev = "<commit>"` on each `tpt-av-cadence-*` / `tpt-kinetix-*` git dependency in root `Cargo.toml`, matching the commits currently locked in `Cargo.lock` (`tpt-cadence` → `72794ef2a270a538efc4bfa24b6f9de96e1df05e`, `tpt-kinetix` → `9747a2b17c77479377f69ad2f2621e1ed674b518`)
+- [x] Pin `rev = "<commit>"` on each `tpt-av-cadence-*` / `tpt-kinetix-*` git dependency in root `Cargo.toml`, matching the commits currently locked in `Cargo.lock` (`tpt-cadence` → `72794ef2a270a538efc4bfa24b6f9de96e1df05e`, `tpt-kinetix` → `9747a2b17c77479377f69ad2f2621e1ed674b518`)
 
 **DoS fixes in `.tkvp` parsing (`tpt-av-asset-cache/src/video.rs`)**
-- [ ] Bound `header.frame_count`-driven `Vec::with_capacity` (`video.rs:344`) against remaining file size before allocating
-- [ ] Bound per-frame `len`-driven `vec![0u8; len]` (`video.rs:387`) against remaining file size before allocating
-- [ ] Add regression test(s) with a crafted malformed `.tkvp` (absurd `frame_count`/`len`) asserting fast `Err` instead of a huge allocation attempt
+- [x] Bound `header.frame_count`-driven `Vec::with_capacity` (`video.rs:344`) against remaining file size before allocating
+- [x] Bound per-frame `len`-driven `vec![0u8; len]` (`video.rs:387`) against remaining file size before allocating
+- [x] Add regression test(s) with a crafted malformed `.tkvp` (absurd `frame_count`/`len`) asserting fast `Err` instead of a huge allocation attempt (`tpt-av-asset-cache/tests/proxy_stream_hardening.rs`)
 
 **Security posture**
 - [ ] Add root `SECURITY.md` (scope, supported versions, vulnerability reporting process, hardening notes)

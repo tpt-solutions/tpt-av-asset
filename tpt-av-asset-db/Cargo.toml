@@ -7,8 +7,9 @@ license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 authors.workspace = true
-keywords = ["media", "audio", "video", "asset", "cache"]
-categories = ["multimedia"]
+readme = "README.md"
+keywords = ["media", "asset", "database", "redb", "embedded"]
+categories = ["database-implementations", "multimedia"]
 
 [dependencies]
 tpt-av-asset-utils.workspace = true

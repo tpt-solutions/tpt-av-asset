@@ -97,9 +97,8 @@ cargo run -p tpt-av-asset-examples --bin proxy_generator   # proxies for a folde
 
 ## Contributing
 
-Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). All
-contributions are dual-licensed MIT OR Apache-2.0, and must not introduce
-GPL/LGPL/AGPL/MPL dependencies.
+Not currently accepting pull requests — see [CONTRIBUTING.md](CONTRIBUTING.md).
+Bug reports and feature requests are welcome as GitHub issues.
 
 ## License
 

@@ -34,14 +34,14 @@ tpt-av-asset-test-media = { path = "test-support/tpt-av-asset-test-media", versi
 # Real ecosystem crates. `tpt-cadence` currently ships decoders only (its
 # `Encoder` trait is a draft) and `tpt-kinetix` has no H.264 encoder yet, so
 # see todo.md "Deviations" for the interim proxy/audio strategies.
-tpt-av-cadence-core = { git = "https://github.com/tpt-solutions/tpt-cadence" }
-tpt-av-cadence-wav = { git = "https://github.com/tpt-solutions/tpt-cadence" }
-tpt-av-cadence-flac = { git = "https://github.com/tpt-solutions/tpt-cadence" }
-tpt-kinetix-core = { git = "https://github.com/tpt-solutions/tpt-kinetix" }
-tpt-kinetix-demux = { git = "https://github.com/tpt-solutions/tpt-kinetix" }
-tpt-kinetix-h264 = { git = "https://github.com/tpt-solutions/tpt-kinetix" }
-tpt-kinetix-lossless = { git = "https://github.com/tpt-solutions/tpt-kinetix" }
-tpt-kinetix-mux = { git = "https://github.com/tpt-solutions/tpt-kinetix" }
+tpt-av-cadence-core = { git = "https://github.com/tpt-solutions/tpt-cadence", rev = "72794ef2a270a538efc4bfa24b6f9de96e1df05e" }
+tpt-av-cadence-wav = { git = "https://github.com/tpt-solutions/tpt-cadence", rev = "72794ef2a270a538efc4bfa24b6f9de96e1df05e" }
+tpt-av-cadence-flac = { git = "https://github.com/tpt-solutions/tpt-cadence", rev = "72794ef2a270a538efc4bfa24b6f9de96e1df05e" }
+tpt-kinetix-core = { git = "https://github.com/tpt-solutions/tpt-kinetix", rev = "9747a2b17c77479377f69ad2f2621e1ed674b518" }
+tpt-kinetix-demux = { git = "https://github.com/tpt-solutions/tpt-kinetix", rev = "9747a2b17c77479377f69ad2f2621e1ed674b518" }
+tpt-kinetix-h264 = { git = "https://github.com/tpt-solutions/tpt-kinetix", rev = "9747a2b17c77479377f69ad2f2621e1ed674b518" }
+tpt-kinetix-lossless = { git = "https://github.com/tpt-solutions/tpt-kinetix", rev = "9747a2b17c77479377f69ad2f2621e1ed674b518" }
+tpt-kinetix-mux = { git = "https://github.com/tpt-solutions/tpt-kinetix", rev = "9747a2b17c77479377f69ad2f2621e1ed674b518" }
 redb = "2.1"
 notify = "6.1"
 image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }

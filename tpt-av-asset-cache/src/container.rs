@@ -116,7 +116,9 @@ impl Header {
         }
     }
 
-    fn bytes(&self) -> [u8; 32] {
+    /// Serializes the header to its 32-byte on-disk representation.
+    #[must_use]
+    pub fn bytes(&self) -> [u8; 32] {
         let mut raw = [0u8; 32];
         raw[0..7].copy_from_slice(MAGIC);
         raw[8..12].copy_from_slice(&self.width.to_le_bytes());

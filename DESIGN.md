@@ -247,8 +247,9 @@ and any crate pulling GPL/LGPL/AGPL/MPL into the tree. Enforced by
 - Unit tests per module (`AssetId` stability/invalidation, priority
   ordering, WAV round-trips, db CRUD + concurrency, debouncer coalescing).
 - Allocation-counting global allocator proves the RT-safe read path.
-- Integration tests generate synthetic media with the stub crates (WAV, TKV)
-  and exercise generate → cache → read-back end to end.
+- Integration tests generate synthetic media with `tpt-av-asset-test-media`
+  (WAV, proxy-stream video, and ffmpeg-gated H.264-in-MP4 clips) and exercise
+  generate → cache → read-back end to end.
 - Pipeline tests cover mid-execution cancellation (no corrupt state) and
   crash/resume (partial progress persisted, completion without redoing).
 - CI matrix: ubuntu-latest (inotify backend), macos-latest (FSEvents

@@ -7,8 +7,9 @@ license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 authors.workspace = true
-keywords = ["media", "audio", "video", "asset", "cache"]
-categories = ["multimedia"]
+readme = "README.md"
+keywords = ["proxy", "transcoding", "video", "audio", "media"]
+categories = ["multimedia::video", "multimedia::audio", "multimedia::encoding"]
 
 [dependencies]
 tpt-av-asset-cache.workspace = true
