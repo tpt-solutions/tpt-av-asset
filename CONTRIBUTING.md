@@ -24,7 +24,7 @@ cargo fuzz run db_row_codec -- -max_total_time=60
 
 CI runs a short (non-blocking) smoke fuzz of both targets on Linux for every
 push. If you change a parser, run the relevant target locally for a few
-minutes before opening the PR; crashes go to `fuzz/artifacts/` and a minimal
+minutes before filing an issue; crashes go to `fuzz/artifacts/` and a minimal
 repro can be replayed with `cargo fuzz run <target> <artifact-file>`. Any
 panic, hang, or oversized allocation on hostile input is a bug — see
 [SECURITY.md](SECURITY.md) for the hardening rules new parsers must follow.

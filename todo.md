@@ -2,15 +2,19 @@
 
 Source of truth for API shapes, architecture, and rationale: [`spec.txt`](spec.txt).
 
-**Status (2026-09-17):** Phases 0–7 implemented; the real `tpt-kinetix` /
-`tpt-cadence` git dependencies are integrated (stubs removed). 90 tests
-green; `cargo fmt` / `clippy -D warnings` / `cargo doc -D warnings` /
-`cargo deny check` all clean; all four examples run end-to-end against the
-real decoders. Phase 8's docs cleanup, git dependency pinning, and the
-`.tkvp` DoS hardening (bounded allocations + regression tests) are done.
-Remaining items are the GitHub-side tasks (no `gh` credentials on this
-machine), crates.io publishing, and the rest of Phase 8 (`SECURITY.md`,
-fuzzing, CLI).
+**Status (2026-09-18):** Phases 0–8 implemented; the real `tpt-kinetix` /
+`tpt-cadence` git dependencies are integrated (stubs removed), pinned to
+fixed revisions. `.tkvp` parsing is hardened against hostile allocations
+with regression tests, `SECURITY.md` is in place, `fuzz/` has two targets
+(`proxy_stream_container`, `db_row_codec`) documented in `CONTRIBUTING.md`
+with a non-blocking CI smoke-fuzz job, and the `tpt-av-asset-cli` crate
+ships `import`/`waveform`/`thumbnail`/`proxy`/`watch` subcommands. 90 tests
+green; `cargo build --workspace --all-targets`, `cargo test --workspace`,
+`clippy -D warnings`, `cargo fmt --check`, and `cargo deny check` all
+verified clean locally. Everything left in this file is blocked on
+resources this machine doesn't have: GitHub repo creation/push (no `gh`
+credentials), branch protection (needs GitHub repo admin), cross-platform
+CI (needs the GitHub remote), and crates.io publishing (needs a token).
 
 **Deviations from `spec.txt` tracked here:**
 - **License:** dual-licensed **MIT OR Apache-2.0** (not MIT-only as spec.txt states). Author/owner: TPT Solutions.
@@ -193,20 +197,20 @@ fuzzing, CLI).
 - [x] Add regression test(s) with a crafted malformed `.tkvp` (absurd `frame_count`/`len`) asserting fast `Err` instead of a huge allocation attempt (`tpt-av-asset-cache/tests/proxy_stream_hardening.rs`)
 
 **Security posture**
-- [ ] Add root `SECURITY.md` (scope, supported versions, vulnerability reporting process, hardening notes)
+- [x] Add root `SECURITY.md` (scope, supported versions, vulnerability reporting process, hardening notes)
 
 **Fuzzing**
-- [ ] Add `fuzz/` (`cargo fuzz init`) with a target fuzzing `tpt_av_asset_cache::container::Header::parse` / `ProxyStreamSource::open`
-- [ ] Add a second fuzz target for the `tpt-av-asset-db` hand-rolled binary decode path (`schema.rs`/`asset_table.rs`/`job_table.rs`)
-- [ ] Document how to run fuzz targets in `CONTRIBUTING.md`
-- [ ] Add an optional/non-blocking short smoke-fuzz CI job (Linux only)
+- [x] Add `fuzz/` (`cargo fuzz init`) with a target fuzzing `tpt_av_asset_cache::container::Header::parse` / `ProxyStreamSource::open` (`proxy_stream_container`)
+- [x] Add a second fuzz target for the `tpt-av-asset-db` hand-rolled binary decode path (`db_row_codec`)
+- [x] Document how to run fuzz targets in `CONTRIBUTING.md`
+- [x] Add an optional/non-blocking short smoke-fuzz CI job (Linux only)
 
 **Adoption: CLI**
-- [ ] Add new `tpt-av-asset-cli` workspace member (binary crate, `publish = true`) using `clap` derive
-- [ ] Subcommands: `import`, `waveform`, `thumbnail`, `proxy`, `watch` (reusing logic from `examples/src/bin/*`)
-- [ ] Update `README.md` with a CLI section / install instructions; keep `examples/` as library-usage documentation
-- [ ] Add `SECURITY.md` pointers from `README.md` and `CONTRIBUTING.md`
+- [x] Add new `tpt-av-asset-cli` workspace member (binary crate, `publish = true`) using `clap` derive
+- [x] Subcommands: `import`, `waveform`, `thumbnail`, `proxy`, `watch` (reusing logic from `examples/src/bin/*`)
+- [x] Update `README.md` with a CLI section / install instructions; keep `examples/` as library-usage documentation
+- [x] Add `SECURITY.md` pointers from `README.md` and `CONTRIBUTING.md`
 
 **Verification**
-- [ ] `cargo build --workspace --all-targets` / `cargo test --workspace` green after all changes above
-- [ ] `cargo clippy --workspace --all-targets -- -D warnings`, `cargo fmt --check`, `cargo deny check` (covers new `clap` dep and `fuzz/` member)
+- [x] `cargo build --workspace --all-targets` / `cargo test --workspace` green after all changes above
+- [x] `cargo clippy --workspace --all-targets -- -D warnings`, `cargo fmt --check`, `cargo deny check` (covers new `clap` dep and `fuzz/` member)
